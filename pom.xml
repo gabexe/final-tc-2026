@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>UNIVERSIDAD_BLAS_PASCAL</groupId>
+    <artifactId>TC-FINAL</artifactId>
+    <version>1.0</version>
+
+    <url>https://github.com/gabexe/TC-FINAL</url>
+    <developers>
+        <developer>
+            <id>gabexe</id>
+            <name>Guillermo Gabriel Gimenez</name>
+            <url>https://github.com/gabexe</url>
+        </developer>
+        <developer>
+            <id>MateoG-2004</id>
+            <name>Mateo Agustin Gomes</name>
+            <url>https://github.com/MateoG-2004</url>
+        </developer>
+        <developer>
+            <id>dommattio</id>
+            <name>Donato Mauro Mattio</name>
+            <url>https://github.com/dommattio</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/gabexe/TC-FINAL.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:gabexe/TC-FINAL.git</developerConnection>
+        <url>https://github.com/gabexe/TC-FINAL</url>
+    </scm>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.13.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.13.1</version>
+                <configuration>
+                    <sourceDirectory>src/main/java</sourceDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

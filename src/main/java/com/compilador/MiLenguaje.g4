@@ -1,5 +1,7 @@
 grammar MiLenguaje;
 
+programa: EOF ; // las reglas de Parser deben ir en minusculas -> eliminar cuando se añadan reglas, esto es solo una linea temporal para no romper el programa
+
 // Tokens
 INT: 'int';
 DOUBLE: 'double';

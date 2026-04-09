@@ -1,0 +1,14 @@
+# Maven
+target/
+
+# IDE / VS Code
+.vscode/
+.idea/
+*.iml
+
+# ANTLR (Archivos generados por la extensión de VS Code)
+.antlr/
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db
