@@ -9,6 +9,20 @@ target/
 # ANTLR (Archivos generados por la extensión de VS Code)
 .antlr/
 
-# Sistema Operativo
+# Archivos generados por ANTLR
+*.tokens
+*.interp
+target/generated-sources/
+
+# Archivos de clases Java
+*.class
+
+# Archivos jar y logs
+*.jar
+*.log
+
+# Otros
 .DS_Store
 Thumbs.db
+*.tmp
+*.out
