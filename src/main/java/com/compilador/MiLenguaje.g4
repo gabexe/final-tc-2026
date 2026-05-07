@@ -1,6 +1,9 @@
 grammar MiLenguaje;
 
-programa: EOF ; // las reglas de Parser deben ir en minusculas -> eliminar cuando se añadan reglas, esto es solo una linea temporal para no romper el programa
+// Reglas del Parser (Sintáctico)
+programa: instruccion* EOF ;
+
+instruccion: ID ASSIGN NUMBER SEMI ;
 
 // Tokens
 INT: 'int';
@@ -21,15 +24,33 @@ FALSE: 'false';
 ID: [a-zA-Z_] [a-zA-Z_0-9]*;
 
 // Numeros
-NUMBER: [0-9]+;
 
-// Operadores
+// Números decimales y enteros
+NUMBER: [0-9]+ ('.' [0-9]+)?;
+
+// Caracteres
+CHAR_LITERAL: '\'' (ESC_SEQ | ~['\\\r\n]) '\'';
+
+// Cadenas
+STRING_LITERAL: '"' (ESC_SEQ | ~["\\\r\n])* '"';
+
+fragment ESC_SEQ: '\\' [btnr'"\\];
+
+// Operadores aritméticos
 ASSIGN: '=';
 PLUS: '+';
 MINUS: '-';
 STAR: '*';
 DIV: '/';
 MOD: '%';
+
+// Operadores relacionales
+GT: '>';
+LT: '<';
+GE: '>=';
+LE: '<=';
+EQ: '==';
+NEQ: '!=';
 
 // Separadores
 LPAREN: '(';
