@@ -26,3 +26,5 @@ target/generated-sources/
 Thumbs.db
 *.tmp
 *.out
+.pdf
+.html

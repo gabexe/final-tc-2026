@@ -34,13 +34,18 @@ public class App {
         System.out.println("\n--- Iniciando Compilación ---");
         ParseTree tree = parser.programa();
 
-        // 5. Mostrar resumen
+        // 5. Construir y mostrar el AST si no hay errores
+        if (!erroresLexicos.hayErrores() && !erroresSintacticos.hayErrores()) {
+            System.out.println("\n--- Árbol de Sintaxis Abstracta (AST) ---");
+            ASTBuilder builder = new ASTBuilder();
+            ASTNode ast = builder.visit(tree);
+            System.out.println(ast);
+            System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos ni sintácticos.");
+        }
+
+        // 6. Mostrar resumen de errores
         System.out.println("\n--- Resumen de Errores ---");
         erroresLexicos.imprimirResumen();
         erroresSintacticos.imprimirResumen();
-
-        if (!erroresLexicos.hayErrores() && !erroresSintacticos.hayErrores()) {
-            System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos ni sintácticos.");
-        }
     }
 }
