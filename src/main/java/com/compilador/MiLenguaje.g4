@@ -1,9 +1,83 @@
 grammar MiLenguaje;
 
 // Reglas del Parser (Sintáctico)
-programa: instruccion* EOF ;
+programa: (declaracion | funcion | sentencia)* EOF ;
 
-instruccion: ID ASSIGN NUMBER SEMI ;
+declaracion
+	: tipo declarador (COMMA declarador)* SEMI
+	;
+
+declarador
+	: ID (LBRACKET NUMBER RBRACKET)?
+	;
+
+funcion
+	: tipo ID LPAREN parametros? RPAREN bloque
+	| VOID ID LPAREN parametros? RPAREN bloque
+	;
+
+parametros
+	: parametro (COMMA parametro)*
+	;
+
+parametro
+	: tipo ID (LBRACKET RBRACKET)?
+	;
+
+sentencia
+	: asignacion
+	| llamadaFuncion SEMI
+	| bloque
+	| seleccion
+	| iteracion
+	| RETURN expresion? SEMI
+	;
+
+asignacion
+	: (ID | ID LBRACKET expresion RBRACKET) ASSIGN expresion SEMI
+	;
+
+llamadaFuncion
+	: ID LPAREN argumentos? RPAREN
+	;
+
+argumentos
+	: expresion (COMMA expresion)*
+	;
+
+bloque
+	: LBRACE sentencia* RBRACE
+	;
+
+seleccion
+	: IF LPAREN expresion RPAREN bloque (ELSE bloque)?
+	;
+
+iteracion
+	: WHILE LPAREN expresion RPAREN bloque
+	| FOR LPAREN (asignacion | declaracion |) expresion? SEMI expresion? RPAREN bloque
+	;
+
+expresion
+	: expresion op=('*'|'/') expresion
+	| expresion op=('+'|'-') expresion
+	| expresion op=('>'|'<'|'>='|'<='|'=='|'!=') expresion
+	| ID
+	| NUMBER
+	| CHAR_LITERAL
+	| STRING_LITERAL
+	| llamadaFuncion
+	| ID LBRACKET expresion RBRACKET
+	| LPAREN expresion RPAREN
+	;
+
+tipo
+	: INT
+	| DOUBLE
+	| CHAR
+	| BOOL
+	| STRING
+	;
 
 // Tokens
 INT: 'int';
