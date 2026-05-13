@@ -36,9 +36,12 @@ public class App {
 
         // 5. Construir y mostrar el AST si no hay errores
         if (!erroresLexicos.hayErrores() && !erroresSintacticos.hayErrores()) {
+            System.out.println("\n--- Árbol Sintáctico (Parse Tree) ---");
+            System.out.println(tree.toStringTree(parser));
+            
             System.out.println("\n--- Árbol de Sintaxis Abstracta (AST) ---");
             ASTBuilder builder = new ASTBuilder();
-            ASTNode ast = builder.visit(tree);
+            ASTNode ast = tree.accept(builder);
             System.out.println(ast);
             System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos ni sintácticos.");
         }
