@@ -24,7 +24,14 @@ public class ASTBuilder extends MiLenguajeBaseVisitor<ASTNode> {
     @Override
     public ASTNode visitDeclarador(DeclaradorContext ctx) {
         ASTNode node = new ASTNode("declarador", ctx.ID().getText());
-        if (ctx.LBRACKET() != null) node.add(new ASTNode("arreglo", ctx.NUMBER().getText()));
+        if (ctx.LBRACKET() != null && ctx.INT_LITERAL() != null) {
+            node.add(new ASTNode("arreglo", ctx.INT_LITERAL().getText()));
+        }
+        if (ctx.ASSIGN() != null) {
+            ASTNode asig = new ASTNode("inicializacion");
+            asig.add(visit(ctx.expresion()));
+            node.add(asig);
+        }
         return node;
     }
 
@@ -119,8 +126,10 @@ public class ASTBuilder extends MiLenguajeBaseVisitor<ASTNode> {
             return op;
         } else if (ctx.ID() != null && ctx.LBRACKET() == null) {
             return new ASTNode("id", ctx.ID().getText());
-        } else if (ctx.NUMBER() != null) {
-            return new ASTNode("num", ctx.NUMBER().getText());
+        } else if (ctx.INT_LITERAL() != null) {
+            return new ASTNode("int", ctx.INT_LITERAL().getText());
+        } else if (ctx.DOUBLE_LITERAL() != null) {
+            return new ASTNode("double", ctx.DOUBLE_LITERAL().getText());
         } else if (ctx.CHAR_LITERAL() != null) {
             return new ASTNode("char", ctx.CHAR_LITERAL().getText());
         } else if (ctx.STRING_LITERAL() != null) {

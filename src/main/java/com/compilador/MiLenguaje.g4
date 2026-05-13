@@ -8,8 +8,8 @@ declaracion
 	;
 
 declarador
-	: ID (LBRACKET NUMBER RBRACKET)?
-	;
+    : ID (LBRACKET INT_LITERAL RBRACKET)? (ASSIGN expresion)?
+    ;
 
 funcion
 	: tipo ID LPAREN parametros? RPAREN bloque
@@ -64,7 +64,8 @@ expresion
 	| expresion op=('+'|'-') expresion
 	| expresion op=('>'|'<'|'>='|'<='|'=='|'!=') expresion
 	| ID
-	| NUMBER
+	| INT_LITERAL
+	| DOUBLE_LITERAL
 	| CHAR_LITERAL
 	| STRING_LITERAL
 	| llamadaFuncion
@@ -101,7 +102,8 @@ ID: [a-zA-Z_] [a-zA-Z_0-9]*;
 // Numeros
 
 // Números decimales y enteros
-NUMBER: [0-9]+ ('.' [0-9]+)?;
+DOUBLE_LITERAL: [0-9]+ '.' [0-9]+;
+INT_LITERAL: [0-9]+;
 
 // Caracteres
 CHAR_LITERAL: '\'' (ESC_SEQ | ~['\\\r\n]) '\'';
@@ -136,6 +138,10 @@ LBRACKET: '[';
 RBRACKET: ']';
 SEMI: ';';
 COMMA: ',';
+
+// Dos puntos y operador de ámbito C++
+SCOPE: '::';
+COLON: ':';
 
 // Manejo de espacios y comentarios
 WS: [ \t\r\n]+ -> skip;

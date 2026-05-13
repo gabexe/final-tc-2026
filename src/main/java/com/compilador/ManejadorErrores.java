@@ -17,7 +17,15 @@ public class ManejadorErrores extends BaseErrorListener {
 
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-        String error = String.format("Error %s en la línea %d:%d -> %s", tipo, line, charPositionInLine, msg);
+        // Ajuste para errores de falta de ';' o ',' (mismatched input ... expecting ';' o ',' o {';', ','})
+        int lineaReportada = line;
+        if (msg.contains("mismatched input") && (
+            msg.matches(".*expecting.*([';']|\\{[^}]*;[^}]*\\}).*") ||
+            msg.matches(".*expecting.*([,]|\\{[^}]*,[^}]*\\}).*")
+        )) {
+            lineaReportada = Math.max(1, line - 1);
+        }
+        String error = String.format("Error %s en la línea %d:%d -> %s", tipo, lineaReportada, charPositionInLine, msg);
         errores.add(error);
         System.err.println(error);
     }
