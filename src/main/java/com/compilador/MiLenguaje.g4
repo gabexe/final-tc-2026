@@ -25,7 +25,8 @@ parametro
 	;
 
 sentencia
-	: asignacion
+	: declaracion
+	| asignacion
 	| llamadaFuncion SEMI
 	| bloque
 	| seleccion
@@ -59,7 +60,7 @@ iteracion
 	;
 
 expresion
-	: expresion op=('*'|'/') expresion
+	: expresion op=('*'|'/'|'%') expresion
 	| expresion op=('+'|'-') expresion
 	| expresion op=('>'|'<'|'>='|'<='|'=='|'!=') expresion
 	| ID
