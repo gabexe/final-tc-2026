@@ -55,6 +55,7 @@
                 <version>4.13.1</version>
                 <configuration>
                     <sourceDirectory>src/main/java</sourceDirectory>
+                    <visitor>true</visitor>
                 </configuration>
                 <executions>
                     <execution>
