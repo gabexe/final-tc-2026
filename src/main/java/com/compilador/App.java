@@ -43,6 +43,15 @@ public class App {
             ASTBuilder builder = new ASTBuilder();
             ASTNode ast = tree.accept(builder);
             System.out.println(ast);
+            
+            // 5b. Análisis Semántico y Tabla de Símbolos
+            System.out.println("\n--- Análisis Semántico y Tabla de Símbolos ---");
+            TablaSimbolos tablaSimbolos = new TablaSimbolos();
+            SimbolosListener simbolosListener = new SimbolosListener(tablaSimbolos);
+            org.antlr.v4.runtime.tree.ParseTreeWalker walker = new org.antlr.v4.runtime.tree.ParseTreeWalker();
+            walker.walk(simbolosListener, tree);
+            tablaSimbolos.printTable();
+            
             System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos ni sintácticos.");
         }
 

@@ -143,24 +143,3 @@ El informe debe incluir:
 * El informe técnico debe ser claro, completo y reflejar el trabajo realizado por ambos integrantes. La calidad del informe será un componente importante en la evaluación final.
 
 **Nota:** La entrega de este trabajo requiere demostrar tanto el dominio técnico como la capacidad de trabajar colaborativamente utilizando herramientas de control de versiones profesionales. El historial de commits debe reflejar el desarrollo incremental del proyecto, con contribuciones equilibradas de ambos integrantes del equipo. El informe técnico debe demostrar la comprensión profunda de los conceptos de compilación y la capacidad de comunicar adecuadamente las decisiones técnicas tomadas.
-
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/
-│   │       └── compilador/
-│   │           ├── App.java                    # Clase principal
-│   │           ├── TablaSimbolos.java          # Tabla de símbolos
-│   │           ├── SimbolosListener.java       # Análisis semántico
-│   │           ├── Optimizador.java            # Optimizaciones
-│   │           ├── MiLenguaje.g4              # Gramática ANTLR
-│   │           └── ...
-│   └── resources/
-├── test/
-│   ├── ejemplo_correcto.cpp
-│   ├── ejemplo_con_errores.cpp
-│   └── ...
-└── README.md
-```
