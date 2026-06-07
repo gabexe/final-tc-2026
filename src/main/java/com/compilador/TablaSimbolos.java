@@ -98,4 +98,31 @@ public class TablaSimbolos {
         System.out.println("- Declaraciones duplicadas: " + duplicateCount);
         System.out.println("===================================================================================================================");
     }
+
+    private int erroresSemanticos = 0;
+
+    public void addErrorSemantico() {
+        erroresSemanticos++;
+    }
+
+    public boolean hayErroresSemanticos() {
+        return erroresSemanticos > 0 || duplicateCount > 0;
+    }
+
+    public static boolean esNumerico(String type) {
+        return "int".equals(type) || "double".equals(type);
+    }
+
+    public static boolean esCompatibleAsignacion(String tipoVar, String tipoExpr) {
+        if (tipoVar == null || tipoExpr == null || "error".equals(tipoVar) || "error".equals(tipoExpr)) return false;
+        if (tipoVar.equals(tipoExpr)) return true;
+        if (esNumerico(tipoVar) && esNumerico(tipoExpr)) return true; // Permite int <-> double
+        return false;
+    }
+
+    public int getCantidadErroresSemanticos() {
+        return erroresSemanticos + duplicateCount;
+    }
 }
+
+    
