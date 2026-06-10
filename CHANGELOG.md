@@ -1,6 +1,51 @@
 # Changelog
 
-## 07/06/2026
+## 08/06/2026
+
+### Added:
+
+#### 1. *Sistema de Diagnóstico Semántico Detallado: `*[TablaSimbolos.java]`**
+   - **Nueva Clase Interna `Diagnostic`**: Se implementó una estructura para almacenar la severidad (`ERROR` o `WARNING`), el mensaje descriptivo, y la ubicación exacta (línea y columna) de cada anomalía encontrada.
+   - **Métodos de Reporte**: Se agregaron `addError()` y `addWarning()` que extraen automáticamente la línea y columna del `ParserRuleContext` de ANTLR.
+   - **Detección Automática de Código Muerto**: Se incorporó lógica en `exitScope()` y el nuevo método `checkGlobalScope()` para emitir *warnings* automáticamente cuando una variable, parámetro o arreglo es declarado pero nunca utilizado.
+   - **Impresión Formateada**: Nuevo método `printDiagnostics()` que ordena los reportes por línea/columna, imprime los errores por `stderr` (consola de errores) y los warnings por `stdout`, mostrando un resumen final de la cantidad de cada uno.
+
+### Changed:
+
+#### [AnalizadorSemantico.java]
+  - **Mensajes Descriptivos**: Se reemplazaron las llamadas genéricas a `addErrorSemantico()` por llamadas a `addError()` y `addWarning()` pasando el contexto (`ctx`) y un mensaje específico (ej. *"Variable 'x' duplicada en el mismo ámbito"*, *"El índice de un arreglo debe ser de tipo entero"*).
+  - **Corrección de Falsos Positivos**: En `visitAsignacion()`, ahora las variables que reciben una asignación también se marcan con `used = true`. Esto evita warnings incorrectos de "variable no usada" cuando una variable global o local solo se escribe pero no se lee posteriormente.
+  - **Validación de Variables Globales**: Al finalizar `visitPrograma()`, se invoca a `checkGlobalScope()` para auditar las variables del nivel 0.
+
+#### [App.java]
+  - **Reordenamiento del Flujo de Salida**: Se ajustó el orden de impresión para que primero se muestre el `--- Diagnóstico Semántico ---` (con sus errores y warnings) y a continuación la `--- Tabla de Símbolos ---`, brindando una lectura más lógica de los resultados de la compilación.
+  - **Manejo de Warnings vs Errores**: La compilación ahora solo se marca como "fallida" si `hayErroresSemanticos()` detecta severidad `ERROR`. Los `WARNING` se informan pero permiten que el mensaje final sea `¡Compilación exitosa!`.
+
+- **`[SimbolosListener.java]`**
+  - **Adaptación de Firmas**: Se actualizó el listener (aunque no se use en el flujo principal) para pasar el `ParserRuleContext` al método `define()` de la Tabla de Símbolos, asegurando que el proyecto compile correctamente sin romper la compatibilidad.
+
+- **`[TablaSimbolos.java]`**
+  - **Firma de `define()`**: Se modificó para recibir el `ParserRuleContext` y poder guardar la referencia al nodo del AST, permitiendo reportar la línea y columna exacta si la variable queda sin usar al cerrar su scope.
+  - **Deprecación de Contador Simple**: Se eliminó el antiguo contador entero `erroresSemanticos` en favor de la lista de objetos `Diagnostic`.
+
+### Verificación y Pruebas Realizadas
+
+1. **Programa Correcto (`src/test/ejemplo_correcto.cpp`)**
+   - Se ejecutó la compilación para validar la nueva distinción entre errores y advertencias.
+   - **Resultados**:
+     - El diagnóstico semántico reporta correctamente `[WARNING]` para la variable global `activo` (declarada pero nunca usada).
+     - Variables como `valorPi` e `inicial` ya no generan falsos positivos, ya que las asignaciones en `main` ahora las marcan correctamente como usadas.
+     - El resumen final indica `0 error(es), 1 advertencia(s)` y la compilación se considera **exitosa** al no haber errores críticos.
+     - El flujo de consola muestra primero el Diagnóstico y luego la Tabla de Símbolos.
+
+2. **Programa con Errores (`src/test/ejemplo_con_errores.cpp`)**
+   - Se ejecutó la compilación para validar el reporte detallado de anomalías críticas y no críticas.
+   - **Resultados**:
+     - Se emiten `[ERROR]` detallados con línea y columna para variables no declaradas (`variableFantasma`, `w`), variables duplicadas (`variableGlobal`, `variableLocal`) e intentos de asignación a funciones (`miFuncion = 10;`).
+     - Se emiten `[WARNING]` precisos para las variables declaradas pero no utilizadas (`variableNoUsada1`, `variableNoUsada2`, `variableNoUsada3`, `z`).
+     - El resumen final indica múltiples errores y advertencias, y la compilación se marca correctamente como **fallida** debido a la presencia de errores críticos.
+
+## 06/06/2026
 
 ### Added:
 
