@@ -1,11 +1,34 @@
 package com.compilador;
 
+import org.antlr.v4.runtime.ParserRuleContext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TablaSimbolos {
+    
+    // Nueva clase para manejar Errores y Warnings
+    public static class Diagnostic {
+        public enum Severity { ERROR, WARNING }
+        public final Severity severity;
+        public final String message;
+        public final int line;
+        public final int column;
+
+        public Diagnostic(Severity severity, String message, int line, int column) {
+            this.severity = severity;
+            this.message = message;
+            this.line = line;
+            this.column = column;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("[%s] Línea %d:%d - %s", severity, line, column, message);
+        }
+    }
+
     public static class Symbol {
         public final String name;
         public final String type;
@@ -14,12 +37,14 @@ public class TablaSimbolos {
         public boolean used = false;
         public boolean initialized = false;
         public boolean duplicate = false;
+        public ParserRuleContext ctx; // Guardamos el contexto para reportar warnings de "no usado"
 
-        public Symbol(String name, String type, String category, int scopeLevel) {
+        public Symbol(String name, String type, String category, int scopeLevel, ParserRuleContext ctx) {
             this.name = name;
             this.type = type;
             this.category = category;
             this.scopeLevel = scopeLevel;
+            this.ctx = ctx;
         }
 
         @Override
@@ -31,12 +56,23 @@ public class TablaSimbolos {
 
     private final List<Map<String, Symbol>> scopes = new ArrayList<>();
     private final List<Symbol> allSymbols = new ArrayList<>();
+    private final List<Diagnostic> diagnostics = new ArrayList<>();
     private int currentScopeLevel = 0;
-    private int duplicateCount = 0;
 
     public TablaSimbolos() {
-        // Inicializar el scope global
         scopes.add(new HashMap<>());
+    }
+
+    public void addError(String message, ParserRuleContext ctx) {
+        int line = ctx.getStart().getLine();
+        int col = ctx.getStart().getCharPositionInLine();
+        diagnostics.add(new Diagnostic(Diagnostic.Severity.ERROR, message, line, col));
+    }
+
+    public void addWarning(String message, ParserRuleContext ctx) {
+        int line = ctx.getStart().getLine();
+        int col = ctx.getStart().getCharPositionInLine();
+        diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING, message, line, col));
     }
 
     public void enterScope() {
@@ -46,21 +82,38 @@ public class TablaSimbolos {
 
     public void exitScope() {
         if (scopes.size() > 1) {
+            Map<String, Symbol> currentScope = scopes.get(scopes.size() - 1);
+            // Al salir del scope, revisamos si quedaron variables sin usar
+            for (Symbol sym : currentScope.values()) {
+                if (!sym.used && !sym.duplicate && 
+                   (sym.category.equals("variable") || sym.category.equals("parametro") || sym.category.equals("arreglo"))) {
+                    addWarning("La variable '" + sym.name + "' fue declarada pero nunca se usó.", sym.ctx);
+                }
+            }
             scopes.remove(scopes.size() - 1);
             currentScopeLevel--;
         }
     }
+    
+    public void checkGlobalScope() {
+        Map<String, Symbol> globalScope = scopes.get(0);
+        for (Symbol sym : globalScope.values()) {
+            if (!sym.used && !sym.duplicate && 
+               (sym.category.equals("variable") || sym.category.equals("arreglo"))) {
+                addWarning("La variable global '" + sym.name + "' fue declarada pero nunca se usó.", sym.ctx);
+            }
+        }
+    }
 
-    public boolean define(String name, String type, String category) {
+    public boolean define(String name, String type, String category, ParserRuleContext ctx) {
         Map<String, Symbol> currentScope = scopes.get(scopes.size() - 1);
         if (currentScope.containsKey(name)) {
-            Symbol sym = new Symbol(name, type, category, currentScopeLevel);
+            Symbol sym = new Symbol(name, type, category, currentScopeLevel, ctx);
             sym.duplicate = true;
-            duplicateCount++;
             allSymbols.add(sym);
             return false;
         }
-        Symbol sym = new Symbol(name, type, category, currentScopeLevel);
+        Symbol sym = new Symbol(name, type, category, currentScopeLevel, ctx);
         currentScope.put(name, sym);
         allSymbols.add(sym);
         return true;
@@ -74,10 +127,6 @@ public class TablaSimbolos {
             }
         }
         return null;
-    }
-
-    public int getDuplicateCount() {
-        return duplicateCount;
     }
 
     public List<Symbol> getAllSymbols() {
@@ -95,18 +144,42 @@ public class TablaSimbolos {
         System.out.println("===================================================================================================================");
         System.out.println("Resumen de la Tabla de Símbolos:");
         System.out.println("- Símbolos totales registrados: " + allSymbols.size());
-        System.out.println("- Declaraciones duplicadas: " + duplicateCount);
+        long duplicadas = allSymbols.stream().filter(s -> s.duplicate).count();
+        System.out.println("- Declaraciones duplicadas: " + duplicadas);
         System.out.println("===================================================================================================================");
     }
 
-    private int erroresSemanticos = 0;
-
-    public void addErrorSemantico() {
-        erroresSemanticos++;
+    public void printDiagnostics() {
+        System.out.println("\n--- Diagnóstico Semántico ---");
+        if (diagnostics.isEmpty()) {
+            System.out.println("No se encontraron errores ni advertencias semánticas.");
+            return;
+        }
+        // Ordenar por línea y columna
+        diagnostics.sort((d1, d2) -> {
+            if (d1.line != d2.line) return Integer.compare(d1.line, d2.line);
+            return Integer.compare(d1.column, d2.column);
+        });
+        
+        long errors = diagnostics.stream().filter(d -> d.severity == Diagnostic.Severity.ERROR).count();
+        long warnings = diagnostics.stream().filter(d -> d.severity == Diagnostic.Severity.WARNING).count();
+        
+        for (Diagnostic d : diagnostics) {
+            if (d.severity == Diagnostic.Severity.ERROR) {
+                System.err.println(d); // Errores por consola de error
+            } else {
+                System.out.println(d); // Warnings por consola estándar
+            }
+        }
+        System.out.println("Resumen Semántico: " + errors + " error(es), " + warnings + " advertencia(s).");
     }
 
     public boolean hayErroresSemanticos() {
-        return erroresSemanticos > 0 || duplicateCount > 0;
+        return diagnostics.stream().anyMatch(d -> d.severity == Diagnostic.Severity.ERROR);
+    }
+
+    public int getCantidadErroresSemanticos() {
+        return (int) diagnostics.stream().filter(d -> d.severity == Diagnostic.Severity.ERROR).count();
     }
 
     public static boolean esNumerico(String type) {
@@ -119,10 +192,4 @@ public class TablaSimbolos {
         if (esNumerico(tipoVar) && esNumerico(tipoExpr)) return true; // Permite int <-> double
         return false;
     }
-
-    public int getCantidadErroresSemanticos() {
-        return erroresSemanticos + duplicateCount;
-    }
 }
-
-    
