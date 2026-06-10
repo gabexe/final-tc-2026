@@ -22,6 +22,8 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
                 visit(child);
             }
         }
+        // Al terminar, revisamos variables globales no usadas
+        tablaSimbolos.checkGlobalScope();
         return null;
     }
 
@@ -33,17 +35,14 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
             if (dec.ID() == null) continue;
             String name = dec.ID().getText();
             String category = (dec.LBRACKET() != null) ? "arreglo" : "variable";
-            
-            boolean ok = tablaSimbolos.define(name, type, category);
+            boolean ok = tablaSimbolos.define(name, type, category, dec);
             if (!ok) {
-                //tablaSimbolos.addErrorSemantico(); // Duplicada en el mismo scope
-                // El duplicateCount de la Tabla de Símbolos ya lo está registrando correctamente.
+                tablaSimbolos.addError("Variable '" + name + "' duplicada en el mismo ámbito.", dec);
             }
-
             if (dec.expresion() != null) {
                 String tipoExpr = visit(dec.expresion());
                 if (!TablaSimbolos.esCompatibleAsignacion(type, tipoExpr)) {
-                    tablaSimbolos.addErrorSemantico(); // Incompatibilidad de tipos
+                    tablaSimbolos.addError("No se puede asignar un valor de tipo '" + tipoExpr + "' a una variable de tipo '" + type + "'.", dec.expresion());
                 }
                 TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
                 if (sym != null) sym.initialized = true;
@@ -57,16 +56,18 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         if (ctx.ID() == null) return null;
         String name = ctx.ID().getText();
         String type = (ctx.tipo() != null) ? ctx.tipo().getText() : "void";
-        
-        boolean ok = tablaSimbolos.define(name, type, "funcion");
+        boolean ok = tablaSimbolos.define(name, type, "funcion", ctx);
         if (!ok) {
-            tablaSimbolos.addErrorSemantico();
+            tablaSimbolos.addError("Función '" + name + "' duplicada.", ctx);
         }
-
-        tablaSimbolos.enterScope(); // Nuevo ámbito para la función
-        
+        tablaSimbolos.enterScope(); 
         String prevFunctionType = currentFunctionType;
         currentFunctionType = type;
+        
+        TablaSimbolos.Symbol funcSym = tablaSimbolos.resolve(name);
+        if (funcSym != null && name.equals("main")) {
+            funcSym.used = true; // main siempre se considera usada
+        }
 
         if (ctx.parametros() != null) visit(ctx.parametros());
         visit(ctx.bloque());
@@ -90,10 +91,9 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         String name = ctx.ID().getText();
         String type = ctx.tipo().getText();
         String category = (ctx.LBRACKET() != null) ? "arreglo" : "parametro";
-        
-        boolean ok = tablaSimbolos.define(name, type, category);
+        boolean ok = tablaSimbolos.define(name, type, category, ctx);
         if (!ok) {
-            tablaSimbolos.addErrorSemantico();
+            tablaSimbolos.addError("Parámetro '" + name + "' duplicado.", ctx);
         } else {
             TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
             if (sym != null) sym.initialized = true;
@@ -122,13 +122,14 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         else if (ctx.RETURN() != null) {
             String tipoRetorno = "void";
             if (ctx.expresion() != null) tipoRetorno = visit(ctx.expresion());
-            
             if (currentFunctionType != null) {
                 if ("void".equals(currentFunctionType) && ctx.expresion() != null) {
-                    tablaSimbolos.addErrorSemantico();
+                    tablaSimbolos.addError("Una función 'void' no puede retornar un valor.", ctx);
                 } else if (!"void".equals(currentFunctionType)) {
-                    if (ctx.expresion() == null || !TablaSimbolos.esCompatibleAsignacion(currentFunctionType, tipoRetorno)) {
-                        tablaSimbolos.addErrorSemantico();
+                    if (ctx.expresion() == null) {
+                        tablaSimbolos.addError("La función debe retornar un valor de tipo '" + currentFunctionType + "'.", ctx);
+                    } else if (!TablaSimbolos.esCompatibleAsignacion(currentFunctionType, tipoRetorno)) {
+                        tablaSimbolos.addError("El tipo de retorno '" + tipoRetorno + "' no coincide con el tipo de la función '" + currentFunctionType + "'.", ctx);
                     }
                 }
             }
@@ -141,24 +142,35 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         if (ctx.ID() == null) return null;
         String name = ctx.ID().getText();
         TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
-        
         if (sym == null) {
-            tablaSimbolos.addErrorSemantico(); // Fuera de ámbito o no declarada
+            tablaSimbolos.addError("Variable '" + name + "' no declarada.", ctx);
+            int idx = ctx.LBRACKET() != null ? 1 : 0;
+            if (ctx.expresion().size() > idx) visit(ctx.expresion(idx));
+            return null;
         } else {
             sym.initialized = true;
+            sym.used = true;
             String tipoVar = sym.type;
             int exprIndex = 0;
-            
             if (ctx.LBRACKET() != null) {
+                if (!"arreglo".equals(sym.category)) {
+                    tablaSimbolos.addError("La variable '" + name + "' no es un arreglo.", ctx);
+                }
                 String tipoIndice = visit(ctx.expresion(0));
-                if (!"int".equals(tipoIndice)) tablaSimbolos.addErrorSemantico();
+                if (!"int".equals(tipoIndice) && !"error".equals(tipoIndice)) {
+                    tablaSimbolos.addError("El índice de un arreglo debe ser de tipo entero.", ctx.expresion(0));
+                }
                 exprIndex = 1;
+            } else {
+                if ("funcion".equals(sym.category)) {
+                    tablaSimbolos.addError("No se puede asignar un valor a la función '" + name + "'.", ctx);
+                }
             }
             
             if (ctx.expresion().size() > exprIndex) {
                 String tipoExpr = visit(ctx.expresion(exprIndex));
                 if (!TablaSimbolos.esCompatibleAsignacion(tipoVar, tipoExpr)) {
-                    tablaSimbolos.addErrorSemantico();
+                    tablaSimbolos.addError("Tipos incompatibles: no se puede asignar '" + tipoExpr + "' a '" + tipoVar + "'.", ctx.expresion(exprIndex));
                 }
             }
         }
@@ -170,14 +182,15 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         if (ctx.ID() == null) return "error";
         String name = ctx.ID().getText();
         TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
-        
-        if (sym == null || !"funcion".equals(sym.category)) {
-            tablaSimbolos.addErrorSemantico(); // No declarada o no es función
+        if (sym == null) {
+            tablaSimbolos.addError("Función '" + name + "' no declarada.", ctx);
+            return "error";
+        } else if (!"funcion".equals(sym.category)) {
+            tablaSimbolos.addError("El identificador '" + name + "' no es una función.", ctx);
             return "error";
         } else {
             sym.used = true;
         }
-        
         if (ctx.argumentos() != null && ctx.argumentos().expresion() != null) {
             for (ExpresionContext e : ctx.argumentos().expresion()) visit(e);
         }
@@ -188,8 +201,8 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
     public String visitSeleccion(SeleccionContext ctx) {
         if (ctx.expresion() != null) {
             String tipoCond = visit(ctx.expresion());
-            if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond)) {
-                tablaSimbolos.addErrorSemantico();
+            if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond) && !"error".equals(tipoCond)) {
+                tablaSimbolos.addError("La condición del 'if' debe ser numérica o booleana.", ctx.expresion());
             }
         }
         if (ctx.bloque() != null && ctx.bloque().size() > 0) visit(ctx.bloque(0));
@@ -202,20 +215,24 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
         if (ctx.WHILE() != null) {
             if (ctx.expresion() != null && ctx.expresion().size() > 0) {
                 String tipoCond = visit(ctx.expresion(0));
-                if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond)) tablaSimbolos.addErrorSemantico();
+                if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond) && !"error".equals(tipoCond)) {
+                    tablaSimbolos.addError("La condición del 'while' debe ser numérica o booleana.", ctx.expresion(0));
+                }
             }
             if (ctx.bloque() != null) visit(ctx.bloque());
         } else if (ctx.FOR() != null) {
-            tablaSimbolos.enterScope(); 
+            tablaSimbolos.enterScope();
             if (ctx.asignacion() != null) visit(ctx.asignacion());
             else if (ctx.declaracion() != null) visit(ctx.declaracion());
             
             if (ctx.expresion() != null && ctx.expresion().size() > 0 && ctx.expresion(0) != null) {
-                 String tipoCond = visit(ctx.expresion(0));
-                 if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond)) tablaSimbolos.addErrorSemantico();
+                String tipoCond = visit(ctx.expresion(0));
+                if (!TablaSimbolos.esNumerico(tipoCond) && !"bool".equals(tipoCond) && !"error".equals(tipoCond)) {
+                    tablaSimbolos.addError("La condición del 'for' debe ser numérica o booleana.", ctx.expresion(0));
+                }
             }
             if (ctx.expresion() != null && ctx.expresion().size() > 1 && ctx.expresion(1) != null) {
-                 visit(ctx.expresion(1)); 
+                visit(ctx.expresion(1));
             }
             if (ctx.bloque() != null) visit(ctx.bloque());
             tablaSimbolos.exitScope();
@@ -229,17 +246,20 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
             String tipoIzq = visit(ctx.expresion(0));
             String tipoDer = visit(ctx.expresion(1));
             String op = ctx.op.getText();
-            
             if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/") || op.equals("%")) {
+                if ("error".equals(tipoIzq) || "error".equals(tipoDer)) return "error";
                 if (!TablaSimbolos.esNumerico(tipoIzq) || !TablaSimbolos.esNumerico(tipoDer)) {
-                    tablaSimbolos.addErrorSemantico();
+                    tablaSimbolos.addError("Operación aritmética requiere operandos numéricos.", ctx);
                     return "error";
                 }
                 if ("double".equals(tipoIzq) || "double".equals(tipoDer)) return "double";
                 return "int";
             } else {
+                if ("error".equals(tipoIzq) || "error".equals(tipoDer)) return "bool";
                 if (!TablaSimbolos.esNumerico(tipoIzq) || !TablaSimbolos.esNumerico(tipoDer)) {
-                     tablaSimbolos.addErrorSemantico();
+                    if (! ("bool".equals(tipoIzq) && "bool".equals(tipoDer) && (op.equals("==") || op.equals("!=")))) {
+                        tablaSimbolos.addError("Operación relacional requiere operandos compatibles.", ctx);
+                    }
                 }
                 return "bool";
             }
@@ -247,7 +267,7 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
             String name = ctx.ID().getText();
             TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
             if (sym == null) {
-                tablaSimbolos.addErrorSemantico(); // Variable fuera de ámbito
+                tablaSimbolos.addError("Variable '" + name + "' no declarada.", ctx);
                 return "error";
             }
             sym.used = true;
@@ -266,16 +286,21 @@ public class AnalizadorSemantico extends MiLenguajeBaseVisitor<String> {
             String name = ctx.ID().getText();
             TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
             if (sym == null) {
-                tablaSimbolos.addErrorSemantico();
+                tablaSimbolos.addError("Variable '" + name + "' no declarada.", ctx);
                 return "error";
             }
-            if (!"arreglo".equals(sym.category)) tablaSimbolos.addErrorSemantico();
+            if (!"arreglo".equals(sym.category)) {
+                tablaSimbolos.addError("La variable '" + name + "' no es un arreglo.", ctx);
+                return "error";
+            }
             sym.used = true;
             if (ctx.expresion() != null && ctx.expresion().size() > 0) {
                 String tipoIndice = visit(ctx.expresion(0));
-                if (!"int".equals(tipoIndice)) tablaSimbolos.addErrorSemantico();
+                if (!"int".equals(tipoIndice) && !"error".equals(tipoIndice)) {
+                    tablaSimbolos.addError("El índice de un arreglo debe ser de tipo entero.", ctx.expresion(0));
+                }
             }
-            return sym.type; 
+            return sym.type;
         } else if (ctx.LPAREN() != null) {
             if (ctx.expresion() != null && ctx.expresion().size() > 0) return visit(ctx.expresion(0));
         }
