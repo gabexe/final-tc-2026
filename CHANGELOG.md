@@ -1,6 +1,13 @@
 # Changelog
 
-## 08/06/2026
+## 10/06/2026
+
+### Fixed:
+
+#### SimbolosListener.java:
+  - Se corrigió la invocación a TablaSimbolos.define() para pasar el ParserRuleContext correspondiente, alineándola con la firma actual y eliminando el error de compilación.
+
+## 09/06/2026
 
 ### Added:
 

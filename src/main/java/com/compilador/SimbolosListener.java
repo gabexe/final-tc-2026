@@ -17,10 +17,9 @@ public class SimbolosListener extends MiLenguajeBaseListener {
             if (dec.ID() == null) continue;
             String name = dec.ID().getText();
             String category = (dec.LBRACKET() != null) ? "arreglo" : "variable";
-            
-            tablaSimbolos.define(name, type, category);
-            
-            // Si hay inicialización directa
+
+            tablaSimbolos.define(name, type, category, dec);
+
             if (dec.ASSIGN() != null) {
                 TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
                 if (sym != null) {
@@ -35,10 +34,9 @@ public class SimbolosListener extends MiLenguajeBaseListener {
         if (ctx.ID() == null) return;
         String name = ctx.ID().getText();
         String type = (ctx.tipo() != null) ? ctx.tipo().getText() : "void";
-        
-        tablaSimbolos.define(name, type, "funcion");
-        
-        // Entrar al scope de la función (contendrá parámetros y cuerpo)
+
+        tablaSimbolos.define(name, type, "funcion", ctx);
+
         tablaSimbolos.enterScope();
     }
 
@@ -53,10 +51,9 @@ public class SimbolosListener extends MiLenguajeBaseListener {
         String name = ctx.ID().getText();
         String type = ctx.tipo().getText();
         String category = (ctx.LBRACKET() != null) ? "arreglo" : "parametro";
-        
-        tablaSimbolos.define(name, type, category);
-        
-        // Los parámetros se consideran inicializados al entrar a la función
+
+        tablaSimbolos.define(name, type, category, ctx);
+
         TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
         if (sym != null) {
             sym.initialized = true;
@@ -65,10 +62,6 @@ public class SimbolosListener extends MiLenguajeBaseListener {
 
     @Override
     public void enterBloque(BloqueContext ctx) {
-        // En C++, los bloques entran en un nuevo ámbito de scope.
-        // Si el bloque es el cuerpo directo de una función, ya entramos a un scope en enterFuncion.
-        // Pero para simplificar y mantener la consistencia del stack de scopes,
-        // entramos a un scope por cada bloque {}.
         tablaSimbolos.enterScope();
     }
 
@@ -99,7 +92,6 @@ public class SimbolosListener extends MiLenguajeBaseListener {
 
     @Override
     public void exitExpresion(ExpresionContext ctx) {
-        // Si la expresión es simplemente un identificador de variable o acceso a arreglo
         if (ctx.ID() != null) {
             String name = ctx.ID().getText();
             TablaSimbolos.Symbol sym = tablaSimbolos.resolve(name);
