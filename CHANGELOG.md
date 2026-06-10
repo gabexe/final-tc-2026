@@ -61,7 +61,7 @@
     - No se genera código intermedio basura ni se producen excepciones por símbolos faltantes en la tabla.
     - El comportamiento es consistente con la teoría de compiladores: la síntesis solo ocurre si el análisis fue 100% exitoso.
 
-## 10/06/2026
+## 10/06/2026 - Fix
 
 ### Fixed:
 
@@ -121,7 +121,7 @@
 - **Implementación del patrón Visitor**: Se crea un analizador semántico (`MiLenguajeBaseVisitor<String>`) que aplica Traducción Dirigida por la Sintaxis con atributos sintetizados (flujo bottom-up).
 - **Verificación de Tipos**: Se validan operaciones aritméticas, relacionales, compatibilidad en asignaciones y tipos de retorno en funciones.
 - **Verificación de Ámbito**: Se comprueba la correcta resolución de identificadores (variables y funciones) asegurando que estén declarados en el scope correspondiente antes de su uso.
-- **Manejo Silencioso de Errores**: Se acumulan las anomalías (incompatibilidades, variables fuera de ámbito) en un contador interno, cumpliendo estrictamente con la restricción de NO reportar detalles específicos (línea, columna, nombre de variable) ni distinguir entre errores críticos y warnings.
+- **Manejo Silencioso de Errores**: Se acumulan las anomalías (incompatibilidades, variables fuera de ámbito) en un contador interno, no reportando detalles específicos (línea, columna, nombre de variable) ni distinguiendo entre errores críticos y warnings.
 
 ### Changed:
 
