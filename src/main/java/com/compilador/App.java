@@ -57,9 +57,15 @@ public class App {
             tablaSimbolos.printTable();
 
             if (analizadorSemantico.hayErrores()) {
-                System.out.println("\nSe detectaron errores semánticos críticos. Compilación fallida.");
+                System.out.println("\nSe detectaron errores semánticos. Compilación fallida.");
             } else {
-                System.out.println("\n¡Compilación exitosa! No se encontraron errores críticos (léxicos, sintácticos ni semánticos).");
+                System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos.");
+                
+                // [NUEVO] Fase 4: Generación de Código Intermedio (TAC)
+                System.out.println("\n--- Generación de Código Intermedio (TAC) ---");
+                GeneradorTAC generadorTAC = new GeneradorTAC();
+                generadorTAC.visit(tree);
+                generadorTAC.printTAC();
             }
         } else {
             System.out.println("\nNo se pudo continuar con el análisis semántico debido a errores léxicos o sintácticos previos.");

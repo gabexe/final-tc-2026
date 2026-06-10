@@ -1,5 +1,37 @@
 # Changelog
 
+## 10/06/2026 - Código Intermedio
+
+### Added:
+
+#### 1. Nueva Clase: [GeneradorTAC.java]
+  - Implementación del Generador de Código de Tres Direcciones (TAC): Se crea un visitor (`MiLenguajeBaseVisitor<String>`) que traduce el AST a código intermedio independiente de la máquina.
+  - Manejo de Temporales y Etiquetas: Se incorporan contadores automáticos (`t0, t1...` y `L0, L1...`) para gestionar resultados intermedios y puntos de salto en el flujo de control.
+  - Expresiones Aritméticas y Lógicas: Se traducen operaciones binarias a instrucciones TAC simples. Las expresiones relacionales generan saltos condicionales (`if ... goto`) asignando 1 o 0 a un temporal según corresponda.
+  - Estructuras de Control: Se implementa la generación de código para `if/else`, `while` y `for` utilizando etiquetas y saltos incondicionales (`goto`) para delimitar bloques verdaderos, falsos y de actualización.
+  - Soporte para Funciones y Arrays: Se emiten instrucciones `param`, `call` y accesos a memoria con índices (`arr[index]`) para soportar llamadas a funciones y arreglos definidos en la gramática.
+
+### Changed:
+
+#### [App.java]
+  - Integración de la Fase de Código Intermedio: Se añade la instanciación y ejecución del `GeneradorTAC` dentro del bloque de compilación exitosa (solo si no hay errores semánticos), respetando el pipeline estándar de compilación.
+  - Salida Formateada: Se agrega la impresión del bloque `--- Código de Tres Direcciones (TAC) ---` al finalizar la compilación válida para visualizar la traducción generada.
+
+#### Verificación y Pruebas Realizadas
+  - Programa Correcto (`src/test/ejemplo_correcto.cpp`)
+  - Se ejecutó la compilación para validar la generación de código intermedio.
+  - Resultados:
+    - El generador produce correctamente instrucciones TAC para declaraciones globales, funciones (`sumar`), operaciones aritméticas complejas, accesos a arrays (`numeros[i]`) y estructuras de control (`if`).
+    - Los temporales y etiquetas se generan de forma secuencial y consistente.
+    - La fase solo se ejecuta tras superar exitosamente los análisis léxico, sintáctico y semántico.
+
+#### Programa con Errores (`src/test/ejemplo_con_errores.cpp`)
+  - Se ejecutó la compilación para validar la protección de la fase de síntesis.
+  - Resultados:
+    - Al detectar errores semánticos (variables duplicadas, no declaradas, etc.), el compilador aborta antes de llegar al generador TAC.
+    - No se genera código intermedio basura ni se producen excepciones por símbolos faltantes en la tabla.
+    - El comportamiento es consistente con la teoría de compiladores: la síntesis solo ocurre si el análisis fue 100% exitoso.
+
 ## 10/06/2026
 
 ### Fixed:
