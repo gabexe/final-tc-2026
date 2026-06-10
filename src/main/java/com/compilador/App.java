@@ -33,38 +33,42 @@ public class App {
         System.out.println("\n--- Iniciando Compilación ---");
         ParseTree tree = parser.programa();
 
-        // [CORRECCIÓN] Declaramos la tabla fuera del IF para que sea visible en el resumen final
         TablaSimbolos tablaSimbolos = new TablaSimbolos();
 
         // 5. Construir y mostrar el AST si no hay errores
         if (!erroresLexicos.hayErrores() && !erroresSintacticos.hayErrores()) {
             System.out.println("\n--- Árbol Sintáctico (Parse Tree) ---");
             System.out.println(tree.toStringTree(parser));
+
             System.out.println("\n--- Árbol de Sintaxis Abstracta (AST) ---");
             ASTBuilder builder = new ASTBuilder();
             ASTNode ast = tree.accept(builder);
             System.out.println(ast);
 
-            // 5b. Análisis Semántico y Tabla de Símbolos
-            System.out.println("\n--- Análisis Semántico y Tabla de Símbolos ---");
-            
-            // Ejecutar Visitor Semántico
+            // 5b. Ejecutar Análisis Semántico
+            System.out.println("\n--- Ejecutando Análisis Semántico ---");
             AnalizadorSemantico analizadorSemantico = new AnalizadorSemantico(tablaSimbolos);
             analizadorSemantico.visit(tree);
+            
+            // 5c. Imprimir Diagnóstico (Errores y Warnings con línea/columna)
+            tablaSimbolos.printDiagnostics();
+            
+            // 5d. Imprimir Tabla de Símbolos
             tablaSimbolos.printTable();
 
-            // Validación final (Sin detalles específicos de línea/columna)
             if (analizadorSemantico.hayErrores()) {
-                System.out.println("\nSe detectaron errores semánticos. Compilación fallida.");
+                System.out.println("\nSe detectaron errores semánticos críticos. Compilación fallida.");
             } else {
-                System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos.");
+                System.out.println("\n¡Compilación exitosa! No se encontraron errores críticos (léxicos, sintácticos ni semánticos).");
             }
+        } else {
+            System.out.println("\nNo se pudo continuar con el análisis semántico debido a errores léxicos o sintácticos previos.");
         }
 
         // 6. Mostrar resumen de errores
-        System.out.println("\n--- Resumen de Errores ---");
+        System.out.println("\n--- Resumen Final de Errores ---");
         erroresLexicos.imprimirResumen();
         erroresSintacticos.imprimirResumen();
-        System.out.println("Errores semánticos: " + tablaSimbolos.getCantidadErroresSemanticos());
+        System.out.println("Errores semánticos críticos: " + tablaSimbolos.getCantidadErroresSemanticos());
     }
 }
