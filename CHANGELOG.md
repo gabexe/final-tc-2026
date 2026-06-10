@@ -1,6 +1,35 @@
 # Changelog
 
-## 10/06/2026 - Código Intermedio
+## 10/06/2026 - Código Intermedio Parte 2
+
+### Added:
+
+#### 1. Mejoras en: GeneradorTAC.java
+  - Traducción Directa de Condiciones (Backpatching Implícito): Se implementó el método auxiliar `generarCondicion()` que traduce expresiones relacionales (ej. `a < b`) directamente a saltos condicionales (`if a < b goto L1`), eliminando la generación ineficiente de temporales booleanos intermedios.
+  - Soporte Completo de Bucles (`while` y `for`): Se completó la lógica de iteración generando correctamente las etiquetas de inicio, condición, cuerpo, actualización y salida, asegurando que los bucles `for` manejen sus tres componentes de forma secuencial en TAC.
+  - Manejo Robusto de Funciones: Se estandarizó la emisión de instrucciones `param` antes de cada `call`, y se añadió un `return` implícito al final de cada definición de función para garantizar un flujo de control seguro incluso si el código fuente no lo especifica explícitamente.
+
+### Changed:
+
+#### GeneradorTAC.java
+  - Refactorización de `visitSeleccion`: Se reemplazó la evaluación de condición por valor con la nueva llamada a `generarCondicion()`, optimizando el código generado para bloques `if-else`.
+  - Refactorización de `visitIteracion`: Se estructuró la generación de etiquetas para `while` y `for` alineándola con los estándares de compiladores modernos, evitando saltos redundantes.
+  - Limpieza en `visitExpresion`: Se delegó la lógica de condiciones complejas al nuevo método auxiliar, mejorando la legibilidad y mantenibilidad del visitor.
+
+#### Verificación y Pruebas Realizadas
+  - Programa Correcto (`src/test/ejemplo_correcto.cpp`)
+  - Se ejecutó la compilación para validar la optimización del código intermedio generado.
+  - Resultados:
+    - El bloque `if (estado > 0)` ahora genera saltos directos sin temporales booleanos innecesarios.
+    - Las llamadas a funciones (`sumar`) emiten correctamente la secuencia `param` -> `call` -> asignación de retorno.
+    - El TAC resultante es más compacto, legible y fiel a la teoría de traducción dirigida por la sintaxis.
+    - La compilación continúa siendo exitosa con 0 errores y las advertencias esperadas.
+
+#### Integridad del Pipeline
+  - Se validó que la fase de generación de código intermedio solo se ejecuta tras superar exitosamente los análisis léxico, sintáctico y semántico.
+  - Los programas con errores semánticos siguen abortando la compilación antes de llegar al generador TAC, evitando la producción de código intermedio inválido.
+
+## 10/06/2026 - Código Intermedio Parte 1
 
 ### Added:
 

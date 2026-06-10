@@ -47,13 +47,14 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
     @Override
     public String visitFuncion(FuncionContext ctx) {
         if (ctx.ID() == null) return null;
+        // Etiqueta de inicio de función
         emit("\n" + ctx.ID().getText() + ":");
-        if (ctx.parametros() != null) {
-            for (ParametroContext p : ctx.parametros().parametro()) {
-                emit("param " + p.ID().getText());
-            }
-        }
+        
+        // Visitar el bloque de la función
         visit(ctx.bloque());
+        
+        // Return implícito al final de la función por seguridad
+        emit("return");
         return null;
     }
 
@@ -115,19 +116,41 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         return null;
     }
 
+    /**
+     * Método auxiliar para generar código de condiciones optimizado.
+     * Traduce condiciones relacionales (ej. a < b) directamente a saltos condicionales.
+     * Evita crear temporales booleanos intermedios innecesarios.
+     */
+    private void generarCondicion(ExpresionContext ctx, String lTrue, String lFalse) {
+        if (ctx.op != null) {
+            String op = ctx.op.getText();
+            if (op.equals(">") || op.equals("<") || op.equals(">=") || op.equals("<=") || op.equals("==") || op.equals("!=")) {
+                String left = visit(ctx.expresion(0));
+                String right = visit(ctx.expresion(1));
+                emit("if " + left + " " + op + " " + right + " goto " + lTrue);
+                emit("goto " + lFalse);
+                return;
+            }
+        }
+        // Si no es una condición relacional directa (ej. es una variable o entero),
+        // evaluamos la expresión y la comparamos con 0.
+        String val = visit(ctx);
+        emit("if " + val + " != 0 goto " + lTrue);
+        emit("goto " + lFalse);
+    }
+
     @Override
     public String visitSeleccion(SeleccionContext ctx) {
-        String cond = visit(ctx.expresion());
         String lTrue = newLabel();
         String lFalse = newLabel();
         String lEnd = (ctx.ELSE() != null) ? newLabel() : lFalse;
-
-        emit("if " + cond + " != 0 goto " + lTrue);
-        emit("goto " + lFalse);
-
+        
+        // Generar saltos condicionales directos
+        generarCondicion(ctx.expresion(), lTrue, lFalse);
+        
         emit(lTrue + ":");
         visit(ctx.bloque(0));
-
+        
         if (ctx.ELSE() != null) {
             emit("goto " + lEnd);
             emit(lFalse + ":");
@@ -139,51 +162,51 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         return null;
     }
 
-        @Override
+    @Override
     public String visitIteracion(IteracionContext ctx) {
         if (ctx.WHILE() != null) {
             String lStart = newLabel();
             String lTrue = newLabel();
             String lFalse = newLabel();
-
+            
             emit(lStart + ":");
-            // [CORRECCIÓN] Usamos el índice (0) para obtener el ExpresionContext de la Lista
-            String cond = visit(ctx.expresion(0)); 
-            emit("if " + cond + " != 0 goto " + lTrue);
-            emit("goto " + lFalse);
-
+            generarCondicion(ctx.expresion(0), lTrue, lFalse);
+            
             emit(lTrue + ":");
             visit(ctx.bloque());
             emit("goto " + lStart);
-
             emit(lFalse + ":");
+            
         } else if (ctx.FOR() != null) {
+            // 1. Inicialización
             if (ctx.asignacion() != null) visit(ctx.asignacion());
             else if (ctx.declaracion() != null) visit(ctx.declaracion());
-
+            
             String lStart = newLabel();
             String lTrue = newLabel();
             String lFalse = newLabel();
             String lUpdate = newLabel();
-
+            
             emit(lStart + ":");
+            
+            // 2. Condición
             if (ctx.expresion().size() > 0 && ctx.expresion(0) != null) {
-                String cond = visit(ctx.expresion(0));
-                emit("if " + cond + " != 0 goto " + lTrue);
-                emit("goto " + lFalse);
+                generarCondicion(ctx.expresion(0), lTrue, lFalse);
             } else {
-                emit("goto " + lTrue);
+                emit("goto " + lTrue); // Bucle infinito si no hay condición
             }
-
+            
             emit(lTrue + ":");
+            
+            // 3. Cuerpo del bucle
             visit(ctx.bloque());
-
+            
+            // 4. Actualización
             emit(lUpdate + ":");
             if (ctx.expresion().size() > 1 && ctx.expresion(1) != null) {
                 visit(ctx.expresion(1));
             }
             emit("goto " + lStart);
-
             emit(lFalse + ":");
         }
         return null;
@@ -198,9 +221,11 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
                 args.add(visit(e));
             }
         }
+        // Pasar parámetros a la función
         for (String arg : args) {
             emit("param " + arg);
         }
+        // Llamar a la función
         String temp = newTemp();
         emit(temp + " = call " + ctx.ID().getText() + ", " + args.size());
         return temp;
@@ -212,14 +237,14 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
             String left = visit(ctx.expresion(0));
             String right = visit(ctx.expresion(1));
             String op = ctx.op.getText();
-
+            
             // 1. Expresiones Aritméticas
             if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/") || op.equals("%")) {
                 String temp = newTemp();
                 emit(temp + " = " + left + " " + op + " " + right);
                 return temp;
-            } 
-            // 2. Expresiones Lógicas / Relacionales
+            }
+            // 2. Expresiones Lógicas / Relacionales (cuando se evalúan como valor, no como salto)
             else {
                 String temp = newTemp();
                 String lTrue = newLabel();
