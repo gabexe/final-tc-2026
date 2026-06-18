@@ -279,4 +279,8 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         }
         return "0";
     }
+
+    public List<String> getCodigo() {
+        return new ArrayList<>(codigo);
+    }
 }

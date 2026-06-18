@@ -51,6 +51,14 @@ int main() {
         auxiliar = estado + 10;
         estado = auxiliar;
     }
+
+    // Agregado para probar optimizacion
+    int plegado = 40 + 2;
+    
+    int cse_a = estado + 50;
+    int cse_b = estado + 50;
+    
+    sumar(1, 2);
     
     return estado;
 }

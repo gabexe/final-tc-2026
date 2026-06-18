@@ -1,5 +1,7 @@
 package com.compilador;
 
+import java.util.List;
+
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -61,11 +63,20 @@ public class App {
             } else {
                 System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos.");
                 
-                // [NUEVO] Fase 4: Generación de Código Intermedio (TAC)
                 System.out.println("\n--- Generación de Código Intermedio (TAC) ---");
                 GeneradorTAC generadorTAC = new GeneradorTAC();
                 generadorTAC.visit(tree);
                 generadorTAC.printTAC();
+
+                System.out.println("\n--- Fase 5: Optimización de Código ---");
+                List<String> codigoSinOptimizar = generadorTAC.getCodigo();
+                List<String> codigoOptimizado = Optimizador.optimizar(codigoSinOptimizar);
+
+                System.out.println("\n--- Código TAC Optimizado ---");
+                for (String instr : codigoOptimizado) {
+                    System.out.println(instr);
+                }
+                System.out.println("----------------------------------------\n");
             }
         } else {
             System.out.println("\nNo se pudo continuar con el análisis semántico debido a errores léxicos o sintácticos previos.");
