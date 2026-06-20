@@ -62,21 +62,38 @@ public class App {
                 System.out.println("\nSe detectaron errores semánticos. Compilación fallida.");
             } else {
                 System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos.");
-                
-                System.out.println("\n--- Generación de Código Intermedio (TAC) ---");
+
+                System.out.println("\n--- Fase 4: Generación de Código Intermedio (TAC) ---");
                 GeneradorTAC generadorTAC = new GeneradorTAC();
                 generadorTAC.visit(tree);
-                generadorTAC.printTAC();
+                List<String> codigoOriginal = generadorTAC.getCodigo();
 
-                System.out.println("\n--- Fase 5: Optimización de Código ---");
-                List<String> codigoSinOptimizar = generadorTAC.getCodigo();
-                List<String> codigoOptimizado = Optimizador.optimizar(codigoSinOptimizar);
+                System.out.println("\n--- TAC sin optimizar ---");
+                for (String instr : codigoOriginal) {
+                    System.out.println(instr);
+                }
 
-                System.out.println("\n--- Código TAC Optimizado ---");
+                System.out.println("\n--- Fase 4.5: Agentes IA sobre el TAC ---");
+                AgenteOptimizadorTAC agenteIA = new AgenteOptimizadorTAC();
+                List<String> codigoConIA = agenteIA.optimizeTAC(codigoOriginal);
+
+                DetectorVariablesInnecesarias detector = new DetectorVariablesInnecesarias();
+                ASTBuilder builderIA = new ASTBuilder();
+                ASTNode astIA = tree.accept(builderIA);
+                detector.analizar(astIA);
+
+                System.out.println("\n--- Fase 5: Optimización Clásica (Post-Agente IA) ---");
+                List<String> codigoOptimizado = Optimizador.optimizar(codigoConIA);
+
+                System.out.println("\n--- Código TAC Final Optimizado ---");
                 for (String instr : codigoOptimizado) {
                     System.out.println(instr);
                 }
                 System.out.println("----------------------------------------\n");
+
+                System.out.println("\n--- Fase 6: Generación de Archivos de Salida ---");
+                String archivoFuente = (args.length > 0) ? args[0] : "stdin.cpp";
+                GeneradorArchivos.generarSalidas(codigoOriginal, codigoOptimizado, archivoFuente);
             }
         } else {
             System.out.println("\nNo se pudo continuar con el análisis semántico debido a errores léxicos o sintácticos previos.");
