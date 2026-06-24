@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 public class TablaSimbolos {
+    private static final String RESET = "\u001B[0m";
+    private static final String ROJO = "\u001B[31m";
+    private static final String VERDE = "\u001B[32m";
+    private static final String AMARILLO = "\u001B[33m";
     
     // Nueva clase para manejar Errores y Warnings
     public static class Diagnostic {
@@ -152,10 +156,10 @@ public class TablaSimbolos {
     public void printDiagnostics() {
         System.out.println("\n--- Diagnóstico Semántico ---");
         if (diagnostics.isEmpty()) {
-            System.out.println("No se encontraron errores ni advertencias semánticas.");
+            System.out.println(VERDE + "✓ No se encontraron errores ni advertencias semánticas." + RESET);
             return;
         }
-        // Ordenar por línea y columna
+        
         diagnostics.sort((d1, d2) -> {
             if (d1.line != d2.line) return Integer.compare(d1.line, d2.line);
             return Integer.compare(d1.column, d2.column);
@@ -166,12 +170,19 @@ public class TablaSimbolos {
         
         for (Diagnostic d : diagnostics) {
             if (d.severity == Diagnostic.Severity.ERROR) {
-                System.err.println(d); // Errores por consola de error
+                System.err.println(ROJO + "[ERROR SEMÁNTICO] Línea " + d.line + ":" + d.column + " - " + d.message + RESET);
             } else {
-                System.out.println(d); // Warnings por consola estándar
+                System.out.println(AMARILLO + "[WARNING] Línea " + d.line + ":" + d.column + " - " + d.message + RESET);
             }
         }
-        System.out.println("Resumen Semántico: " + errors + " error(es), " + warnings + " advertencia(s).");
+        
+        System.out.println("\nResumen Semántico:");
+        if (errors > 0) {
+            System.out.println(ROJO + "✗ " + errors + " error(es) semántico(s)." + RESET);
+        }
+        if (warnings > 0) {
+            System.out.println(AMARILLO + "⚠ " + warnings + " advertencia(s)." + RESET);
+        }
     }
 
     public boolean hayErroresSemanticos() {
