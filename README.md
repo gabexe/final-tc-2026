@@ -1,145 +1,154 @@
-# Técnicas de Compilación: Trabajo Final — 2026
-
-## Resumen
-Diseñar e implementar un compilador para un subconjunto del lenguaje C++ utilizando la herramienta ANTLR4, aplicando los conceptos teóricos y prácticos vistos en la materia de Técnicas de Compilación.
-
-## Descripción
-El estudiante deberá desarrollar un compilador completo que sea capaz de analizar, verificar y generar código para programas escritos en un subconjunto del lenguaje C++. El compilador deberá implementar todas las fases del proceso de compilación: análisis léxico, análisis sintáctico, análisis semántico, generación de código intermedio y optimización.
-
-## Modalidad de Trabajo
-* **Trabajo en Equipo:** El proyecto deberá realizarse en equipos de dos (2) estudiantes.
-* **Control de Versiones:** Todo el código del proyecto debe estar alojado en un repositorio de GitHub público.
-* **Commits Frecuentes:** Se requiere que ambos integrantes realicen commits regulares que reflejen el progreso del desarrollo. No se evaluarán repositorios que contengan un solo commit o muy pocos commits concentrados cerca de la fecha de entrega.
-* **Distribución Equitativa:** Ambos integrantes deben participar activamente en el desarrollo, lo cual debe reflejarse en la historia de commits del repositorio.
-
-## Funcionalidades Requeridas
-
-### 1. Análisis Léxico
-* Implementar un analizador léxico utilizando ANTLR4 que reconozca los tokens del lenguaje.
-* Identificar y reportar errores léxicos.
-* Generar una tabla de tokens.
-
-### 2. Análisis Sintáctico
-* Implementar un analizador sintáctico utilizando ANTLR4 que verifique la estructura gramatical del programa.
-* Construir un árbol de sintaxis abstracta (AST).
-* Identificar y reportar errores sintácticos.
-* Visualizar el árbol sintáctico generado.
-
-### 3. Análisis Semántico
-* Implementar un analizador semántico que verifique la coherencia semántica del programa.
-* Construir y mantener una tabla de símbolos.
-* Verificar tipos de datos y compatibilidad en operaciones.
-* Verificar el ámbito de las variables y funciones.
-* Reportar errores semánticos (con detalles específicos).
-* Distinguir entre errores (críticos) y warnings (no críticos).
-
-### 4. Generación de Código Intermedio
-* Implementar un generador de código de tres direcciones.
-* Manejar expresiones aritméticas y lógicas.
-* Manejar estructuras de control (if-else, bucles).
-* Manejar llamadas a funciones y retorno de valores.
-
-### 5. Optimización de Código
-* Implementar al menos tres técnicas de optimización, que pueden incluir:
-    * Propagación de constantes
-    * Eliminación de código muerto
-    * Simplificación de expresiones
-    * Eliminación de subexpresiones comunes
-    * Optimización de bucles
-
-### 6. Salidas del Compilador
-* Generar archivos de salida para el código intermedio y optimizado.
-* Implementar un sistema de reporte de errores y warnings que utilice colores para diferenciarlos (verde para éxito, amarillo para warnings, rojo para errores).
+<div align="center">
+  <h1>Compilador C++ (Subconjunto)</h1>
+  <p><strong>Técnicas de Compilación — Universidad Blas Pascal (2026)</strong></p>
+  
+  [![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)](#)
+  [![ANTLR4](https://img.shields.io/badge/ANTLR-4.13.1-black?style=for-the-badge)](#)
+  [![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](#)
+</div>
 
 ---
 
-## Subconjunto del Lenguaje C++ a Implementar
+## Introducción
 
-### Tipos de Datos
-* `int`
-* `char`
-* `double`
-* `void` (para funciones)
-
-### Estructuras de Control
-* Condicionales (`if-else`)
-* Bucles (`for`, `while`)
-* Sentencias de control de bucle (`break`, `continue`)
-
-### Elementos del Lenguaje
-* Declaración de variables
-* Declaración de funciones
-* Expresiones aritméticas y lógicas
-* Llamadas a funciones
-* Retorno de valores
-* Asignaciones
+El presente documento constituye la documentación y el Informe Técnico del proyecto de compilador desarrollado. Este proyecto consiste en un traductor completo implementado en el lenguaje **Java** haciendo uso de la herramienta de reconocimiento léxico y sintáctico **ANTLR4**. El objetivo principal radica en el análisis de código fuente correspondiente a un subconjunto específico del lenguaje C++, validando su correctitud lógica y semántica, para finalmente generar un Código de Tres Direcciones (TAC) debidamente optimizado.
 
 ---
 
-## Evaluación
-Se evaluará el trabajo considerando:
-1.  Corrección y completitud de la implementación.
-2.  Manejo adecuado de errores y warnings.
-3.  Calidad del código generado.
-4.  Efectividad de las optimizaciones implementadas.
-5.  Calidad de la documentación y del informe técnico.
-6.  Ejemplos de prueba que demuestren las capacidades del compilador.
-7.  Historial de commits en GitHub: Se evaluará la frecuencia, distribución y calidad de los commits realizados por ambos integrantes del equipo.
-8.  Participación equitativa: Ambos miembros deben demostrar participación activa en el desarrollo.
+## Equipo de Desarrollo
+
+El diseño e implementación de este compilador fue llevado a cabo de forma colaborativa por el siguiente equipo:
+
+| Desarrolladores |
+| :--- |
+| <img src="https://github.com/gabexe.png?size=40" width="35" style="border-radius: 50%; vertical-align: middle;"> &nbsp; [**Guillermo Gabriel Gimenez**](https://github.com/gabexe) | 
+| <img src="https://github.com/MateoG-2004.png?size=40" width="35" style="border-radius: 50%; vertical-align: middle;"> &nbsp; [**Mateo Agustin Gomes**](https://github.com/MateoG-2004) | 
+| <img src="https://github.com/dommattio.png?size=40" width="35" style="border-radius: 50%; vertical-align: middle;"> &nbsp; [**Donato Mauro Mattio**](https://github.com/dommattio) | 
 
 ---
 
-## Entregables
+## Estructura del Proyecto
 
-### 1. Repositorio de Código
-* Código fuente del compilador.
-* Gramática ANTLR4 utilizada.
-* Ejemplos de programas de prueba.
-* URL del repositorio GitHub donde se ha desarrollado el proyecto.
+El repositorio adopta una arquitectura estándar de proyectos Maven, facilitando la separación entre la lógica central del compilador y el entorno de pruebas unitarias:
 
-### 2. Informe Técnico (en formato PDF)
-El informe debe incluir:
-* **Portada:** Incluir título del trabajo, nombres de los integrantes, materia, profesor y fecha.
-* **Introducción:** Descripción general del compilador desarrollado y sus objetivos.
-* **Análisis del Problema:** Especificación del subconjunto de C++ implementado.
-* **Diseño de la Solución:**
-    * Arquitectura general del compilador.
-    * Descripción de cada fase de compilación.
-    * Decisiones de diseño tomadas.
-* **Implementación:**
-    * Detalles técnicos de la implementación.
-    * Descripción de la gramática ANTLR4.
-    * Detalles de la tabla de símbolos.
-    * Algoritmos utilizados en cada fase.
-    * Técnicas de optimización implementadas.
-* **Ejemplos y Pruebas:**
-    * Casos de prueba significativos.
-    * Salidas generadas.
-    * Análisis de resultados.
-* **Dificultades Encontradas y Soluciones Aplicadas.**
-* **Conclusiones.**
-* **Referencias Bibliográficas.**
-* **Anexos** (si son necesarios).
-
-### 3. Manual de Usuario
-* Instrucciones de instalación.
-* Guía de uso del compilador.
-* Ejemplos de compilación de programas.
-* Interpretación de los mensajes de error y warning.
+```text
+TC-FINAL/
+├── 📄 pom.xml                    # Gestión de dependencias (ANTLR4) y ciclo de construcción
+├── 📄 README.md                  # Especificaciones de la cátedra
+├── 📄 CHANGELOG.md               # Registro de control de versiones
+├── 📄 DOCUMENTACION.md           # Informe técnico actual
+└── 📁 src/
+    ├── 📁 main/java/com/compilador/  # Lógica principal del compilador
+    │   ├── 📝 App.java               # Punto de entrada y orquestación
+    │   ├── 📝 MiLenguaje.g4          # Gramática formal definida para ANTLR4
+    │   ├── 📝 AnalizadorLexico.java  # Análisis lexicográfico (Fase 1)
+    │   ├── 📝 ASTBuilder.java        # Construcción del Árbol de Sintaxis Abstracta (Fase 2)
+    │   ├── 📝 AnalizadorSemantico.java # Análisis de coherencia (Fase 3)
+    │   ├── 📝 TablaSimbolos.java     # Gestión de memoria y validación de ámbitos (Scope)
+    │   ├── 📝 GeneradorTAC.java      # Síntesis de código intermedio (Fase 4)
+    │   ├── 📝 Optimizador.java       # Módulo de mejora de rendimiento (Fase 5)
+    │   └── 📝 GeneradorArchivos.java # Escritura de artefactos resultantes
+    └── 📁 test/                      # Archivos fuente para validación
+        ├── 📄 ejemplo_correcto.cpp   # Prueba de flujo de compilación exitoso
+        └── 📄 ejemplo_con_errores.cpp# Prueba diseñada para invocar fallos semánticos
+```
 
 ---
 
-## Fecha de Entrega
-[Fecha específica según el calendario académico]
+## Arquitectura y Flujo de Datos
+
+El diseño arquitectónico del compilador se estructura sobre un pipeline secuencial de 5 fases. Este enfoque garantiza que las inconsistencias detectadas en etapas tempranas detengan la compilación, mitigando la propagación de errores hacia las etapas de síntesis y optimización.
+
+```mermaid
+flowchart TD
+    A["Código Fuente C++"] -->|Fase 1| B["Análisis Léxico<br>Identificación de Tokens"]
+    B -->|Fase 2| C["Análisis Sintáctico<br>Construcción del AST"]
+    C -->|Fase 3| D["Análisis Semántico<br>Validación y Tabla de Símbolos"]
+    D -->|Fase 4| E["Generación TAC<br>Síntesis de Código Intermedio"]
+    E -->|Fase 5| F["Optimización<br>Agentes Optimizadores"]
+    F --> G["Archivos de Salida<br>.tac / .opt.tac"]
+
+    classDef default fill:#ffffff,stroke:#333333,stroke-width:1px,color:#333333;
+    classDef io fill:#f4f4f4,stroke:#111111,stroke-width:2px,color:#111111;
+    class A,G io;
+```
 
 ---
 
-## Restricciones y Consideraciones
-* El compilador debe ser desarrollado en **Java**, utilizando **ANTLR4** como herramienta de generación de analizadores léxicos y sintácticos.
-* Se debe realizar una demostración del funcionamiento del compilador con ejemplos representativos.
-* El código debe estar adecuadamente comentado y seguir buenas prácticas de programación.
-* No se aceptarán entregas que no cumplan con los requisitos de trabajo en equipo y gestión de versiones (repositorio con commits regulares de ambos integrantes).
-* La última actualización del repositorio debe realizarse antes de la fecha y hora límite de entrega.
-* El informe técnico debe ser claro, completo y reflejar el trabajo realizado por ambos integrantes. La calidad del informe será un componente importante en la evaluación final.
+## Desarrollo Cronológico por Fases
 
-**Nota:** La entrega de este trabajo requiere demostrar tanto el dominio técnico como la capacidad de trabajar colaborativamente utilizando herramientas de control de versiones profesionales. El historial de commits debe reflejar el desarrollo incremental del proyecto, con contribuciones equilibradas de ambos integrantes del equipo. El informe técnico debe demostrar la comprensión profunda de los conceptos de compilación y la capacidad de comunicar adecuadamente las decisiones técnicas tomadas.
+### Fase 1: Análisis Léxico *(Abril 2026)*
+> [!NOTE]
+> **Objetivo:** Leer el código fuente e identificar las unidades léxicas indivisibles (Tokens), tales como palabras reservadas, identificadores, literales y operadores.
+
+- Desarrollo de las reglas gramaticales base mediante el archivo `MiLenguaje.g4`.
+- Integración con **Maven** para la generación automatizada del analizador léxico (*Lexer*) a través de ANTLR4.
+
+### Fase 2: Análisis Sintáctico *(Mayo 2026)*
+> [!NOTE]
+> **Objetivo:** Validar que la secuencia de *Tokens* se ajuste estrictamente a las reglas gramaticales que rigen la estructura formal del subconjunto de C++.
+
+- Implementación del Árbol de Sintaxis Abstracta (**AST**) como representación en memoria de las estructuras gramaticales.
+- Incorporación del módulo `ManejadorErrores` para la interceptación temprana de secuencias inválidas o *Tokens* espurios.
+
+### Fase 3: Análisis Semántico *(Junio 2026)*
+> [!IMPORTANT]
+> **Objetivo:** Auditar la coherencia del programa, validando compatibilidad de tipos, correctitud de asignaciones y la correcta resolución de referencias a identificadores dentro de su ámbito de vida (*scope*).
+
+- Se introdujo la estructura de datos **Tabla de Símbolos**, la cual retiene la información de los identificadores declarados y su ciclo de vida.
+- Se implementó un sistema de **Diagnósticos Semánticos** para categorizar anomalías:
+  - **[ERROR]:** Uso de variables no definidas o colisiones de nombres (provoca la finalización temprana del proceso).
+  - **[WARNING]:** Detección de variables asignadas que nunca son referenciadas (Código Muerto). Estas anomalías permiten que la compilación continúe.
+
+<details>
+<summary>Fragmento de diagnóstico de variables subutilizadas</summary>
+
+```cpp
+int main() {
+    int x = 10;
+    int inutil = 100; // El análisis semántico intercepta esta línea generando un [WARNING]
+    return x;
+}
+```
+</details>
+
+### Fase 4: Código Intermedio (TAC) *(Junio 2026)*
+> [!NOTE]
+> **Objetivo:** Realizar la síntesis del programa abstrayendo la arquitectura de destino mediante un Código de Tres Direcciones (TAC).
+
+- Traducción de expresiones anidadas hacia secuencias de instrucciones unitarias (ej. `z = x + y * 2` se traduce a `t0 = y * 2`, `t1 = x + t0`, `z = t1`).
+- Los saltos de control condicionales (`if`) y las estructuras de iteración (`while`, `for`) son modelados estructuralmente a través de bifurcaciones directas (`goto`) hacia etiquetas (ej. `L0`, `L1`).
+
+### Fase 5: Optimización *(Junio 2026)*
+> [!TIP]
+> **Objetivo:** Analizar y depurar el TAC generado mediante heurísticas específicas para reducir el volumen de instrucciones y mejorar la eficiencia del cálculo en tiempo de ejecución.
+
+- **Plegamiento de Constantes (*Constant Folding*):** Resolución de literales en etapa de compilación (ej. reemplazo directo de `t0 = 5 + 5` por `t0 = 10`).
+- **Eliminación de Redundancias:** Purgado de instrucciones y bifurcaciones inalcanzables.
+- **Salida del Compilador:** La clase `GeneradorArchivos` escribe físicamente los resultados en los artefactos correspondientes en el directorio del entorno.
+
+---
+
+## Manual de Ejecución
+
+Para replicar el proceso de compilación localmente y someter programas a la cadena de análisis, deben seguirse los siguientes comandos de consola:
+
+1. **Resolución de dependencias y empaquetado inicial:**
+   ```bash
+   mvn clean install
+   ```
+2. **Invocación del ciclo de compilación sobre un archivo de prueba:**
+   ```bash
+   mvn exec:java -Dexec.mainClass="com.compilador.App" -Dexec.args="src/test/ejemplo_correcto.cpp"
+   ```
+
+El *standard output* presentará un resumen detallado que abarca:
+- El Parse Tree construido.
+- El volcado de los contextos retenidos en la Tabla de Símbolos.
+- Informes de Diagnóstico Semántico.
+- El Código TAC resultante (antes y después de la fase de optimización).
+
+---
+<div align="center">
+  <i>Documentación técnica – Universidad Blas Pascal, 2026</i>
+</div>
