@@ -8,6 +8,9 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 public class App {
+    private static final String RESET = "\u001B[0m";
+    private static final String VERDE = "\u001B[32m";
+
     public static void main(String[] args) throws Exception {
         // 1. Obtener flujo de caracteres (desde archivo o consola)
         CharStream input;
@@ -61,7 +64,7 @@ public class App {
             if (analizadorSemantico.hayErrores()) {
                 System.out.println("\nSe detectaron errores semánticos. Compilación fallida.");
             } else {
-                System.out.println("\n¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos.");
+                System.out.println(VERDE + "\n✓ ¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos." + RESET);
 
                 System.out.println("\n--- Fase 4: Generación de Código Intermedio (TAC) ---");
                 GeneradorTAC generadorTAC = new GeneradorTAC();
