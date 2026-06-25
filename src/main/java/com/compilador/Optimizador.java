@@ -1,14 +1,16 @@
 package com.compilador;
 
 import java.util.*;
-import java.util.regex.*;
 
+/**
+ * Optimizador de Código Intermedio.
+ */
 public class Optimizador {
 
-    public static List<String> optimizar(List<String> codigo) {
+    public static List<InstruccionTAC> optimizar(List<InstruccionTAC> codigo) {
         System.out.println("\n--- Aplicando Optimizaciones ---");
 
-        List<String> resultado = new ArrayList<>(codigo);
+        List<InstruccionTAC> resultado = new ArrayList<>(codigo);
 
         resultado = constantFolding(resultado);
         resultado = commonSubexpressionElimination(resultado);
@@ -17,132 +19,118 @@ public class Optimizador {
         return resultado;
     }
 
-    private static List<String> constantFolding(List<String> codigo) {
-        List<String> optimizado = new ArrayList<>();
-        Pattern pattern = Pattern.compile("^\\s*(\\w+)\\s*=\\s*(\\w+)\\s*([+\\-*/%])\\s*(\\w+)\\s*$");
+    private static List<InstruccionTAC> constantFolding(List<InstruccionTAC> codigo) {
+        List<InstruccionTAC> optimizado = new ArrayList<>();
         int cambios = 0;
 
-        for (String linea : codigo) {
-            Matcher m = pattern.matcher(linea);
-            if (m.matches()) {
-                String result = m.group(1);
-                String op1 = m.group(2);
-                String op = m.group(3);
-                String op2 = m.group(4);
-
-                if (esEntero(op1) && esEntero(op2)) {
+        for (InstruccionTAC inst : codigo) {
+            if (inst.getTipo() == InstruccionTAC.Tipo.ASIGNACION && 
+                inst.getOperador() != null &&
+                !inst.getOperador().equals("[]") && !inst.getOperador().equals("[]=")) {
+                
+                String op1 = inst.getOperando1();
+                String op2 = inst.getOperando2();
+                
+                if (UtilsOperaciones.esEntero(op1) && UtilsOperaciones.esEntero(op2)) {
                     int a = Integer.parseInt(op1);
                     int b = Integer.parseInt(op2);
-                    Integer res = calcular(a, b, op);
+                    Integer res = UtilsOperaciones.calcular(a, b, inst.getOperador());
+                    
                     if (res != null) {
-                        optimizado.add(result + " = " + res);
+                        optimizado.add(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, inst.getDestino(), String.valueOf(res), null, null));
                         cambios++;
                         continue;
                     }
                 }
             }
-            optimizado.add(linea);
+            optimizado.add(inst);
         }
         System.out.println("[Constant Folding] Eliminadas " + cambios + " operaciones en tiempo de compilación.");
         return optimizado;
     }
 
-    private static List<String> commonSubexpressionElimination(List<String> codigo) {
-        List<String> optimizado = new ArrayList<>();
+    private static List<InstruccionTAC> commonSubexpressionElimination(List<InstruccionTAC> codigo) {
+        List<InstruccionTAC> optimizado = new ArrayList<>();
         Map<String, String> expresiones = new HashMap<>();
-        Pattern pattern = Pattern.compile("^\\s*(\\w+)\\s*=\\s*(\\w+)\\s*([+\\-*/%])\\s*(\\w+)\\s*$");
         int cambios = 0;
 
-        for (String linea : codigo) {
-            Matcher m = pattern.matcher(linea);
-            if (m.matches()) {
-                String result = m.group(1);
-                String op1 = m.group(2);
-                String op = m.group(3);
-                String op2 = m.group(4);
-
-                String clave = op1 + " " + op + " " + op2;
-
-                if (expresiones.containsKey(clave)) {
-                    String temporalPrevio = expresiones.get(clave);
-                    optimizado.add(result + " = " + temporalPrevio);
-                    cambios++;
+        for (InstruccionTAC inst : codigo) {
+            if (inst.getTipo() == InstruccionTAC.Tipo.ASIGNACION) {
+                if (inst.getOperador() != null && !inst.getOperador().equals("[]") && !inst.getOperador().equals("[]=")) {
+                    String clave = inst.getOperando1() + " " + inst.getOperador() + " " + inst.getOperando2();
+                    
+                    if (expresiones.containsKey(clave)) {
+                        String temporalPrevio = expresiones.get(clave);
+                        optimizado.add(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, inst.getDestino(), temporalPrevio, null, null));
+                        cambios++;
+                    } else {
+                        expresiones.put(clave, inst.getDestino());
+                        optimizado.add(inst);
+                    }
                 } else {
-                    expresiones.put(clave, result);
-                    optimizado.add(linea);
+                    // Si es asignación simple o de arreglo, limpiar la tabla si se sobreescribe una variable
+                    String dest = inst.getDestino();
+                    expresiones.entrySet().removeIf(e -> e.getValue().equals(dest) || e.getKey().contains(dest));
+                    optimizado.add(inst);
                 }
             } else {
-                Pattern asignacion = Pattern.compile("^\\s*(\\w+)\\s*=\\s*(\\w+)\\s*$");
-                Matcher m2 = asignacion.matcher(linea);
-                if (m2.matches()) {
-                    String var = m2.group(1);
-                    expresiones.entrySet().removeIf(e -> e.getValue().equals(var) || e.getKey().contains(var));
-                }
-                optimizado.add(linea);
+                optimizado.add(inst);
             }
         }
         System.out.println("[CSE] Eliminadas " + cambios + " subexpresiones comunes.");
         return optimizado;
     }
 
-    private static List<String> deadCodeElimination(List<String> codigo) {
+    private static List<InstruccionTAC> deadCodeElimination(List<InstruccionTAC> codigo) {
         Set<String> usadas = new HashSet<>();
-        Pattern usoPattern = Pattern.compile("\\b([a-zA-Z_]\\w*|t\\d+)\\b");
 
-        for (String linea : codigo) {
-            if (linea.trim().endsWith(":") || linea.trim().startsWith("goto") ||
-                linea.trim().startsWith("if ") || linea.trim().startsWith("param") ||
-                linea.trim().startsWith("return") || linea.trim().startsWith("call")) {
-                Matcher m = usoPattern.matcher(linea);
-                while (m.find()) usadas.add(m.group(1));
-                continue;
-            }
-
-            Pattern asignacion = Pattern.compile("^\\s*(\\w+)\\s*=\\s*(.*)$");
-            Matcher m = asignacion.matcher(linea);
-            if (m.matches()) {
-                String ladoDerecho = m.group(2);
-                Matcher uso = usoPattern.matcher(ladoDerecho);
-                while (uso.find()) usadas.add(uso.group(1));
+        // Paso 1: Recolectar variables usadas
+        for (InstruccionTAC inst : codigo) {
+            switch (inst.getTipo()) {
+                case ASIGNACION:
+                    if (inst.getOperando1() != null && !UtilsOperaciones.esEntero(inst.getOperando1())) usadas.add(inst.getOperando1());
+                    if (inst.getOperando2() != null && !UtilsOperaciones.esEntero(inst.getOperando2())) usadas.add(inst.getOperando2());
+                    // Para arreglos (destino[op1] = op2), operando1 es el indice, destino es usado si es lectura, etc.
+                    // Simplified: just add operando1 and 2
+                    break;
+                case SALTO_CONDICIONAL:
+                    if (inst.getOperando1() != null && !UtilsOperaciones.esEntero(inst.getOperando1())) usadas.add(inst.getOperando1());
+                    if (inst.getOperando2() != null && !UtilsOperaciones.esEntero(inst.getOperando2())) usadas.add(inst.getOperando2());
+                    break;
+                case PARAM:
+                case RETURN:
+                    if (inst.getOperando1() != null && !UtilsOperaciones.esEntero(inst.getOperando1())) usadas.add(inst.getOperando1());
+                    break;
+                case CALL:
+                    if (inst.getOperando2() != null && !UtilsOperaciones.esEntero(inst.getOperando2())) usadas.add(inst.getOperando2());
+                    break;
+                default:
+                    break;
             }
         }
 
-        List<String> optimizado = new ArrayList<>();
+        // Paso 2: Eliminar asignaciones a temporales no usadas
+        List<InstruccionTAC> optimizado = new ArrayList<>();
         int eliminadas = 0;
-        Pattern tempPattern = Pattern.compile("^\\s*(t\\d+)\\s*=.*$");
 
-        for (String linea : codigo) {
-            Matcher m = tempPattern.matcher(linea);
-            if (m.matches()) {
-                String temp = m.group(1);
-                if (!usadas.contains(temp)) {
+        for (InstruccionTAC inst : codigo) {
+            if (inst.getTipo() == InstruccionTAC.Tipo.ASIGNACION && inst.getDestino() != null) {
+                if (inst.getDestino().startsWith("t") && !usadas.contains(inst.getDestino())) {
                     eliminadas++;
                     continue;
                 }
             }
-            optimizado.add(linea);
+            if (inst.getTipo() == InstruccionTAC.Tipo.CALL && inst.getDestino() != null) {
+                if (inst.getDestino().startsWith("t") && !usadas.contains(inst.getDestino())) {
+                    // Se deja la llamada, solo ignoramos su retorno
+                    // Opcionalmente se podria dejar igual para efectos secundarios
+                    optimizado.add(new InstruccionTAC(InstruccionTAC.Tipo.CALL, null, inst.getOperando1(), null, inst.getOperando2()));
+                    continue;
+                }
+            }
+            optimizado.add(inst);
         }
         System.out.println("[Dead Code] Eliminadas " + eliminadas + " instrucciones de código muerto.");
         return optimizado;
-    }
-
-    private static boolean esEntero(String s) {
-        try {
-            Integer.parseInt(s);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    private static Integer calcular(int a, int b, String op) {
-        switch (op) {
-            case "+": return a + b;
-            case "-": return a - b;
-            case "*": return a * b;
-            case "/": return (b != 0) ? a / b : null;
-            case "%": return (b != 0) ? a % b : null;
-            default: return null;
-        }
     }
 }
