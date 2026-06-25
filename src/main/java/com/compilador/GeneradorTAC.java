@@ -5,13 +5,18 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Generador de Código de Tres Direcciones (TAC)
+ */
 public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
     private int tempCount = 0;
     private int labelCount = 0;
-    private List<String> codigo;
+    private final List<InstruccionTAC> instrucciones;
+    private final java.util.Stack<String> startLabels = new java.util.Stack<>();
+    private final java.util.Stack<String> endLabels = new java.util.Stack<>();
 
     public GeneradorTAC() {
-        this.codigo = new ArrayList<>();
+        this.instrucciones = new ArrayList<>();
     }
 
     private String newTemp() {
@@ -22,16 +27,12 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         return "L" + (labelCount++);
     }
 
-    public void emit(String instruction) {
-        codigo.add(instruction);
+    private void emit(InstruccionTAC instruccion) {
+        instrucciones.add(instruccion);
     }
 
-    public void printTAC() {
-        System.out.println("\n--- Código de Tres Direcciones (TAC) ---");
-        for (String instr : codigo) {
-            System.out.println(instr);
-        }
-        System.out.println("----------------------------------------\n");
+    public List<InstruccionTAC> getInstrucciones() {
+        return new ArrayList<>(instrucciones);
     }
 
     @Override
@@ -47,14 +48,14 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
     @Override
     public String visitFuncion(FuncionContext ctx) {
         if (ctx.ID() == null) return null;
-        // Etiqueta de inicio de función
-        emit("\n" + ctx.ID().getText() + ":");
         
-        // Visitar el bloque de la función
+        // Etiqueta de inicio de función
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, ctx.ID().getText()));
+        
         visit(ctx.bloque());
         
-        // Return implícito al final de la función por seguridad
-        emit("return");
+        // Return implícito al final de la función
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.RETURN, null));
         return null;
     }
 
@@ -64,7 +65,7 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
             for (DeclaradorContext dec : ctx.declarador()) {
                 if (dec.ASSIGN() != null && dec.expresion() != null) {
                     String exprVal = visit(dec.expresion());
-                    emit(dec.ID().getText() + " = " + exprVal);
+                    emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, dec.ID().getText(), exprVal, null, null));
                 }
             }
         }
@@ -92,10 +93,16 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         else if (ctx.RETURN() != null) {
             if (ctx.expresion() != null) {
                 String retVal = visit(ctx.expresion());
-                emit("return " + retVal);
+                emit(new InstruccionTAC(InstruccionTAC.Tipo.RETURN, retVal));
             } else {
-                emit("return");
+                emit(new InstruccionTAC(InstruccionTAC.Tipo.RETURN, null));
             }
+        }
+        else if (ctx.BREAK() != null) {
+            if (!endLabels.isEmpty()) emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, endLabels.peek()));
+        }
+        else if (ctx.CONTINUE() != null) {
+            if (!startLabels.isEmpty()) emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, startLabels.peek()));
         }
         return null;
     }
@@ -103,40 +110,43 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
     @Override
     public String visitAsignacion(AsignacionContext ctx) {
         if (ctx.ID() == null) return null;
-        int exprIndex = (ctx.LBRACKET() != null) ? 1 : 0;
+        boolean esArreglo = ctx.LBRACKET() != null;
+        int exprIndex = esArreglo ? 1 : 0;
+        
         if (ctx.expresion().size() > exprIndex) {
             String exprVal = visit(ctx.expresion(exprIndex));
-            if (ctx.LBRACKET() != null) {
+            if (esArreglo) {
                 String index = visit(ctx.expresion(0));
-                emit(ctx.ID().getText() + "[" + index + "] = " + exprVal);
+                emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, ctx.ID().getText(), index, "[]=", exprVal));
             } else {
-                emit(ctx.ID().getText() + " = " + exprVal);
+                emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, ctx.ID().getText(), exprVal, null, null));
             }
         }
         return null;
     }
 
     /**
-     * Método auxiliar para generar código de condiciones optimizado.
-     * Traduce condiciones relacionales (ej. a < b) directamente a saltos condicionales.
-     * Evita crear temporales booleanos intermedios innecesarios.
+     * Traduce condiciones directamente a saltos condicionales, evitando temporales booleanos
      */
     private void generarCondicion(ExpresionContext ctx, String lTrue, String lFalse) {
         if (ctx.op != null) {
             String op = ctx.op.getText();
-            if (op.equals(">") || op.equals("<") || op.equals(">=") || op.equals("<=") || op.equals("==") || op.equals("!=")) {
+            if (esOperadorRelacional(op)) {
                 String left = visit(ctx.expresion(0));
                 String right = visit(ctx.expresion(1));
-                emit("if " + left + " " + op + " " + right + " goto " + lTrue);
-                emit("goto " + lFalse);
+                emit(InstruccionTAC.saltoCondicional(left, op, right, lTrue));
+                emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lFalse));
                 return;
             }
         }
-        // Si no es una condición relacional directa (ej. es una variable o entero),
-        // evaluamos la expresión y la comparamos con 0.
+        // Condición no relacional (ej. flag booleana)
         String val = visit(ctx);
-        emit("if " + val + " != 0 goto " + lTrue);
-        emit("goto " + lFalse);
+        emit(InstruccionTAC.saltoCondicional(val, "!=", "0", lTrue));
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lFalse));
+    }
+
+    private boolean esOperadorRelacional(String op) {
+        return op.equals(">") || op.equals("<") || op.equals(">=") || op.equals("<=") || op.equals("==") || op.equals("!=");
     }
 
     @Override
@@ -145,19 +155,18 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         String lFalse = newLabel();
         String lEnd = (ctx.ELSE() != null) ? newLabel() : lFalse;
         
-        // Generar saltos condicionales directos
         generarCondicion(ctx.expresion(), lTrue, lFalse);
         
-        emit(lTrue + ":");
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lTrue));
         visit(ctx.bloque(0));
         
         if (ctx.ELSE() != null) {
-            emit("goto " + lEnd);
-            emit(lFalse + ":");
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lEnd));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lFalse));
             visit(ctx.bloque(1));
-            emit(lEnd + ":");
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lEnd));
         } else {
-            emit(lFalse + ":");
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lFalse));
         }
         return null;
     }
@@ -165,51 +174,65 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
     @Override
     public String visitIteracion(IteracionContext ctx) {
         if (ctx.WHILE() != null) {
-            String lStart = newLabel();
-            String lTrue = newLabel();
-            String lFalse = newLabel();
-            
-            emit(lStart + ":");
-            generarCondicion(ctx.expresion(0), lTrue, lFalse);
-            
-            emit(lTrue + ":");
-            visit(ctx.bloque());
-            emit("goto " + lStart);
-            emit(lFalse + ":");
-            
+            generarWhileTAC(ctx);
         } else if (ctx.FOR() != null) {
-            // 1. Inicialización
-            if (ctx.asignacion() != null) visit(ctx.asignacion());
-            else if (ctx.declaracion() != null) visit(ctx.declaracion());
-            
-            String lStart = newLabel();
-            String lTrue = newLabel();
-            String lFalse = newLabel();
-            String lUpdate = newLabel();
-            
-            emit(lStart + ":");
-            
-            // 2. Condición
-            if (ctx.expresion().size() > 0 && ctx.expresion(0) != null) {
-                generarCondicion(ctx.expresion(0), lTrue, lFalse);
-            } else {
-                emit("goto " + lTrue); // Bucle infinito si no hay condición
-            }
-            
-            emit(lTrue + ":");
-            
-            // 3. Cuerpo del bucle
-            visit(ctx.bloque());
-            
-            // 4. Actualización
-            emit(lUpdate + ":");
-            if (ctx.expresion().size() > 1 && ctx.expresion(1) != null) {
-                visit(ctx.expresion(1));
-            }
-            emit("goto " + lStart);
-            emit(lFalse + ":");
+            generarForTAC(ctx);
         }
         return null;
+    }
+
+    private void generarWhileTAC(IteracionContext ctx) {
+        String lStart = newLabel();
+        String lTrue = newLabel();
+        String lFalse = newLabel();
+        
+        startLabels.push(lStart);
+        endLabels.push(lFalse);
+
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lStart));
+        generarCondicion(ctx.expresion(0), lTrue, lFalse);
+        
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lTrue));
+        visit(ctx.bloque());
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lStart));
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lFalse));
+
+        startLabels.pop();
+        endLabels.pop();
+    }
+
+    private void generarForTAC(IteracionContext ctx) {
+        if (ctx.asignacion() != null) visit(ctx.asignacion());
+        else if (ctx.declaracion() != null) visit(ctx.declaracion());
+        
+        String lStart = newLabel();
+        String lTrue = newLabel();
+        String lFalse = newLabel();
+        String lUpdate = newLabel();
+        
+        startLabels.push(lUpdate);
+        endLabels.push(lFalse);
+        
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lStart));
+        
+        if (ctx.expresion().size() > 0 && ctx.expresion(0) != null) {
+            generarCondicion(ctx.expresion(0), lTrue, lFalse);
+        } else {
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lTrue));
+        }
+        
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lTrue));
+        visit(ctx.bloque());
+        
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lUpdate));
+        if (ctx.expresion().size() > 1 && ctx.expresion(1) != null) {
+            visit(ctx.expresion(1));
+        }
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lStart));
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lFalse));
+        
+        startLabels.pop();
+        endLabels.pop();
     }
 
     @Override
@@ -221,42 +244,18 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
                 args.add(visit(e));
             }
         }
-        // Pasar parámetros a la función
         for (String arg : args) {
-            emit("param " + arg);
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.PARAM, arg));
         }
-        // Llamar a la función
         String temp = newTemp();
-        emit(temp + " = call " + ctx.ID().getText() + ", " + args.size());
+        emit(new InstruccionTAC(InstruccionTAC.Tipo.CALL, temp, ctx.ID().getText(), null, String.valueOf(args.size())));
         return temp;
     }
 
     @Override
     public String visitExpresion(ExpresionContext ctx) {
         if (ctx.op != null) {
-            String left = visit(ctx.expresion(0));
-            String right = visit(ctx.expresion(1));
-            String op = ctx.op.getText();
-            
-            // 1. Expresiones Aritméticas
-            if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/") || op.equals("%")) {
-                String temp = newTemp();
-                emit(temp + " = " + left + " " + op + " " + right);
-                return temp;
-            }
-            // 2. Expresiones Lógicas / Relacionales (cuando se evalúan como valor, no como salto)
-            else {
-                String temp = newTemp();
-                String lTrue = newLabel();
-                String lEnd = newLabel();
-                emit("if " + left + " " + op + " " + right + " goto " + lTrue);
-                emit(temp + " = 0");
-                emit("goto " + lEnd);
-                emit(lTrue + ":");
-                emit(temp + " = 1");
-                emit(lEnd + ":");
-                return temp;
-            }
+            return procesarOperacion(ctx);
         } else if (ctx.ID() != null && ctx.LBRACKET() == null) {
             return ctx.ID().getText();
         } else if (ctx.INT_LITERAL() != null) {
@@ -272,7 +271,7 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         } else if (ctx.ID() != null && ctx.LBRACKET() != null) {
             String index = visit(ctx.expresion(0));
             String temp = newTemp();
-            emit(temp + " = " + ctx.ID().getText() + "[" + index + "]");
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, temp, ctx.ID().getText(), "[]", index));
             return temp;
         } else if (ctx.LPAREN() != null) {
             return visit(ctx.expresion(0));
@@ -280,7 +279,31 @@ public class GeneradorTAC extends MiLenguajeBaseVisitor<String> {
         return "0";
     }
 
-    public List<String> getCodigo() {
-        return new ArrayList<>(codigo);
+    private String procesarOperacion(ExpresionContext ctx) {
+        String left = visit(ctx.expresion(0));
+        String right = visit(ctx.expresion(1));
+        String op = ctx.op.getText();
+        
+        if (esOperadorAritmetico(op)) {
+            String temp = newTemp();
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, temp, left, op, right));
+            return temp;
+        } else {
+            // Evaluando expresión relacional/lógica como valor booleano (0 o 1)
+            String temp = newTemp();
+            String lTrue = newLabel();
+            String lEnd = newLabel();
+            emit(InstruccionTAC.saltoCondicional(left, op, right, lTrue));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, temp, "0", null, null));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.SALTO, lEnd));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lTrue));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, temp, "1", null, null));
+            emit(new InstruccionTAC(InstruccionTAC.Tipo.ETIQUETA, lEnd));
+            return temp;
+        }
+    }
+
+    private boolean esOperadorAritmetico(String op) {
+        return op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/") || op.equals("%");
     }
 }
