@@ -39,14 +39,19 @@ TC-FINAL/
 ├── 📄 DOCUMENTACION.md           # Informe técnico actual
 └── 📁 src/
     ├── 📁 main/java/com/compilador/  # Lógica principal del compilador
-    │   ├── 📝 App.java               # Punto de entrada y orquestación
+    │   ├── 📝 App.java               # Punto de entrada de consola
+    │   ├── 📝 Compilador.java        # Orquestador del pipeline de compilación
     │   ├── 📝 MiLenguaje.g4          # Gramática formal definida para ANTLR4
     │   ├── 📝 AnalizadorLexico.java  # Análisis lexicográfico (Fase 1)
     │   ├── 📝 ASTBuilder.java        # Construcción del Árbol de Sintaxis Abstracta (Fase 2)
     │   ├── 📝 AnalizadorSemantico.java # Análisis de coherencia (Fase 3)
     │   ├── 📝 TablaSimbolos.java     # Gestión de memoria y validación de ámbitos (Scope)
+    │   ├── 📝 TiposLenguaje.java     # Constantes para tipos del lenguaje
     │   ├── 📝 GeneradorTAC.java      # Síntesis de código intermedio (Fase 4)
+    │   ├── 📝 InstruccionTAC.java    # Abstracción orientada a objetos para el TAC
     │   ├── 📝 Optimizador.java       # Módulo de mejora de rendimiento (Fase 5)
+    │   ├── 📝 AgenteOptimizadorTAC.java # Agente IA mock para optimización
+    │   ├── 📝 UtilsOperaciones.java  # Operaciones reutilizables
     │   └── 📝 GeneradorArchivos.java # Escritura de artefactos resultantes
     └── 📁 test/                      # Archivos fuente para validación
         ├── 📄 ejemplo_correcto.cpp   # Prueba de flujo de compilación exitoso
@@ -61,16 +66,47 @@ El diseño arquitectónico del compilador se estructura sobre un pipeline secuen
 
 ```mermaid
 flowchart TD
-    A["Código Fuente C++"] -->|Fase 1| B["Análisis Léxico<br>Identificación de Tokens"]
-    B -->|Fase 2| C["Análisis Sintáctico<br>Construcción del AST"]
-    C -->|Fase 3| D["Análisis Semántico<br>Validación y Tabla de Símbolos"]
-    D -->|Fase 4| E["Generación TAC<br>Síntesis de Código Intermedio"]
-    E -->|Fase 5| F["Optimización<br>Agentes Optimizadores"]
-    F --> G["Archivos de Salida<br>.tac / .opt.tac"]
+    subgraph Entrada ["Entrada"]
+        A["Código Fuente (.cpp)"]
+    end
 
-    classDef default fill:#ffffff,stroke:#333333,stroke-width:1px,color:#333333;
-    classDef io fill:#f4f4f4,stroke:#111111,stroke-width:2px,color:#111111;
-    class A,G io;
+    subgraph FrontEnd ["Front-End (Análisis)"]
+        B["Fase 1: Análisis Léxico<br>AnalizadorLexico"]
+        C["Fase 2: Análisis Sintáctico<br>ASTBuilder"]
+        D["Fase 3: Análisis Semántico<br>AnalizadorSemantico"]
+        TS[("Tabla de Símbolos")]
+    end
+
+    subgraph BackEnd ["Back-End (Síntesis y Mejora)"]
+        E["Fase 4: Código Intermedio<br>GeneradorTAC"]
+        F["Fase 5: Optimización<br>Agente IA y Optimizador"]
+    end
+
+    subgraph Salida ["Salida"]
+        G["Archivos de Salida<br>.tac y .opt.tac"]
+    end
+
+    %% Flujo Principal
+    A -->|"Lee el texto"| B
+    B -->|"Genera Tokens"| C
+    C -->|"Crea Arbol AST"| D
+    D -->|"AST Validado"| E
+    E -->|"Genera Instrucciones TAC"| F
+    F -->|"TAC Optimizado"| G
+
+    %% Relaciones secundarias
+    D -.->|"Guarda o Lee variables"| TS
+
+    %% Estilos de colores
+    classDef inout fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px,color:#0d47a1
+    classDef frontend fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c
+    classDef backend fill:#e8f5e9,stroke:#43a047,stroke-width:2px,color:#1b5e20
+    classDef db fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+
+    class A,G inout
+    class B,C,D frontend
+    class E,F backend
+    class TS db
 ```
 
 ---
@@ -123,8 +159,11 @@ int main() {
 > [!TIP]
 > **Objetivo:** Analizar y depurar el TAC generado mediante heurísticas específicas para reducir el volumen de instrucciones y mejorar la eficiencia del cálculo en tiempo de ejecución.
 
-- **Plegamiento de Constantes (*Constant Folding*):** Resolución de literales en etapa de compilación (ej. reemplazo directo de `t0 = 5 + 5` por `t0 = 10`).
-- **Eliminación de Redundancias:** Purgado de instrucciones y bifurcaciones inalcanzables.
+- **Agente IA Mock (`AgenteOptimizadorTAC`):** Un módulo estructurado conceptualmente como un "agente inteligente" que simula un pase avanzado de optimización sobre el código intermedio. A pesar de su nombre, no utiliza redes neuronales ni machine learning, sino que aplica algoritmos clásicos y deterministas de optimización de compiladores. Se encarga específicamente de:
+  - **Plegamiento de Constantes (*Constant Folding*):** Resolución de operaciones entre literales en etapa de compilación (ej. reemplazo directo de `t0 = 5 + 5` por `t0 = 10`).
+  - **Propagación de Constantes:** Sustitución de referencias a variables por sus valores literales conocidos (ej. propagar `x = 5` hacia `y = x + 2` para formar `y = 5 + 2`).
+  - **Eliminación de Asignaciones Redundantes:** Descarte de reasignaciones inútiles como `x = x` o reescrituras del mismo valor.
+- **Eliminación de Código Muerto y Subexpresiones (Post-Agente):** El módulo base `Optimizador` complementa al agente purgando código inalcanzable y subexpresiones comunes.
 - **Salida del Compilador:** La clase `GeneradorArchivos` escribe físicamente los resultados en los artefactos correspondientes en el directorio del entorno.
 
 ---
