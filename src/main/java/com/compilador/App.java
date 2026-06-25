@@ -11,101 +11,13 @@ public class App {
     private static final String RESET = "\u001B[0m";
     private static final String VERDE = "\u001B[32m";
 
-    public static void main(String[] args) throws Exception {
-        // 1. Obtener flujo de caracteres (desde archivo o consola)
-        CharStream input;
-        if (args.length > 0) {
-            input = CharStreams.fromFileName(args[0]);
-        } else {
-            System.out.println("Ingrese el código fuente:");
-            input = CharStreams.fromStream(System.in);
+    public static void main(String[] args) {
+        try {
+            Compilador compilador = new Compilador(args);
+            compilador.compilar();
+        } catch (Exception e) {
+            System.err.println("Ocurrió un error inesperado durante la compilación: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        // 2. Análisis Léxico
-        MiLenguajeLexer lexer = new MiLenguajeLexer(input);
-        ManejadorErrores erroresLexicos = new ManejadorErrores("Léxico");
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(erroresLexicos);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-        // 3. Análisis Sintáctico
-        MiLenguajeParser parser = new MiLenguajeParser(tokens);
-        ManejadorErrores erroresSintacticos = new ManejadorErrores("Sintáctico");
-        parser.removeErrorListeners();
-        parser.addErrorListener(erroresSintacticos);
-
-        // 4. Iniciar parsing desde la regla principal (programa)
-        System.out.println("\n--- Iniciando Compilación ---");
-        ParseTree tree = parser.programa();
-
-        TablaSimbolos tablaSimbolos = new TablaSimbolos();
-
-        // 5. Construir y mostrar el AST si no hay errores
-        if (!erroresLexicos.hayErrores() && !erroresSintacticos.hayErrores()) {
-            System.out.println("\n--- Árbol Sintáctico (Parse Tree) ---");
-            System.out.println(tree.toStringTree(parser));
-
-            System.out.println("\n--- Árbol de Sintaxis Abstracta (AST) ---");
-            ASTBuilder builder = new ASTBuilder();
-            ASTNode ast = tree.accept(builder);
-            System.out.println(ast);
-
-            // 5b. Ejecutar Análisis Semántico
-            System.out.println("\n--- Ejecutando Análisis Semántico ---");
-            AnalizadorSemantico analizadorSemantico = new AnalizadorSemantico(tablaSimbolos);
-            analizadorSemantico.visit(tree);
-            
-            // 5c. Imprimir Diagnóstico (Errores y Warnings con línea/columna)
-            tablaSimbolos.printDiagnostics();
-            
-            // 5d. Imprimir Tabla de Símbolos
-            tablaSimbolos.printTable();
-
-            if (analizadorSemantico.hayErrores()) {
-                System.out.println("\nSe detectaron errores semánticos. Compilación fallida.");
-            } else {
-                System.out.println(VERDE + "\n✓ ¡Compilación exitosa! No se encontraron errores léxicos, sintácticos ni semánticos." + RESET);
-
-                System.out.println("\n--- Fase 4: Generación de Código Intermedio (TAC) ---");
-                GeneradorTAC generadorTAC = new GeneradorTAC();
-                generadorTAC.visit(tree);
-                List<String> codigoOriginal = generadorTAC.getCodigo();
-
-                System.out.println("\n--- TAC sin optimizar ---");
-                for (String instr : codigoOriginal) {
-                    System.out.println(instr);
-                }
-
-                System.out.println("\n--- Fase 4.5: Agentes IA sobre el TAC ---");
-                AgenteOptimizadorTAC agenteIA = new AgenteOptimizadorTAC();
-                List<String> codigoConIA = agenteIA.optimizeTAC(codigoOriginal);
-
-                DetectorVariablesInnecesarias detector = new DetectorVariablesInnecesarias();
-                ASTBuilder builderIA = new ASTBuilder();
-                ASTNode astIA = tree.accept(builderIA);
-                detector.analizar(astIA);
-
-                System.out.println("\n--- Fase 5: Optimización Clásica (Post-Agente IA) ---");
-                List<String> codigoOptimizado = Optimizador.optimizar(codigoConIA);
-
-                System.out.println("\n--- Código TAC Final Optimizado ---");
-                for (String instr : codigoOptimizado) {
-                    System.out.println(instr);
-                }
-                System.out.println("----------------------------------------\n");
-
-                System.out.println("\n--- Fase 6: Generación de Archivos de Salida ---");
-                String archivoFuente = (args.length > 0) ? args[0] : "stdin.cpp";
-                GeneradorArchivos.generarSalidas(codigoOriginal, codigoOptimizado, archivoFuente);
-            }
-        } else {
-            System.out.println("\nNo se pudo continuar con el análisis semántico debido a errores léxicos o sintácticos previos.");
-        }
-
-        // 6. Mostrar resumen de errores
-        System.out.println("\n--- Resumen Final de Errores ---");
-        erroresLexicos.imprimirResumen();
-        erroresSintacticos.imprimirResumen();
-        System.out.println("Errores semánticos críticos: " + tablaSimbolos.getCantidadErroresSemanticos());
     }
 }
