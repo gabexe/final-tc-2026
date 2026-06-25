@@ -32,6 +32,8 @@ sentencia
 	| seleccion
 	| iteracion
 	| RETURN expresion? SEMI
+	| BREAK SEMI
+	| CONTINUE SEMI
 	;
 
 asignacion
@@ -93,6 +95,8 @@ ELSE: 'else';
 WHILE: 'while';
 FOR: 'for';
 RETURN: 'return';
+BREAK: 'break';
+CONTINUE: 'continue';
 TRUE: 'true';
 FALSE: 'false';
 
