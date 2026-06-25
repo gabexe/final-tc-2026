@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Compiler - macOS Sepia</title>
+    <!-- Prism.js Tema Solarized Light -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-solarizedlight.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="split-container">
+        <!-- Panel Izquierdo: Editor -->
+        <div class="panel left-panel">
+            <div class="mac-header">
+                <div class="title">main.cpp</div>
+                <div id="status-indicator" class="status-indicator"></div>
+            </div>
+            <div class="editor-container">
+                <pre aria-hidden="true" id="highlighting"><code class="language-cpp" id="highlighting-content"></code></pre>
+                <textarea id="code-editor" spellcheck="false" placeholder="// Escribe aquí tu código C++ para compilar...
+int main() {
+    int x = 10;
+    if (x > 5) {
+        // Haz algo
+    }
+    return 0;
+}"></textarea>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Evolución del Compilador -->
+        <div class="panel right-panel">
+            <div class="mac-header subtle">
+                <div class="title">Flujo de Compilación</div>
+                <button id="btn-copy" class="btn-icon" title="Copiar salida completa" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="timeline-container" id="timeline-container">
+                <div class="welcome-msg" id="welcome-msg">Escribe o pega código para analizar...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Prism.js para resaltado de sintaxis C++ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>

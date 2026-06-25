@@ -1,0 +1,318 @@
+:root {
+    --bg-main: #fcfbfa;       /* Fondo ultra claro sepia */
+    --panel-bg: #ffffff;      /* Paneles blancos con leve tinte */
+    --text-main: #4a3f35;     /* Marrón oscuro suave */
+    --text-muted: #8c7e71;
+    --border-color: #ede7de;  /* Bordes suaves */
+    --timeline-line: #dcd3c6;
+    --node-bg: #fcfbfa;
+    --node-border: #e6decb;
+    /* Colores ANSI Solarized adaptados */
+    --ansi-red: #dc322f;
+    --ansi-green: #859900;
+    --ansi-yellow: #b58900;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+}
+
+.split-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: 1px;
+    background-color: var(--border-color); /* Actúa como divisor */
+}
+
+/* --- Layout Flexible --- */
+.panel {
+    background-color: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1; /* Valor por defecto */
+    min-width: 0; /* Previene que el panel se quede atascado por contenido ancho */
+    transition: flex 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.right-panel {
+    background-color: #f7f3ec; /* Ligeramente sepia para separar el resultado */
+}
+
+/* Hover effects (Expand/Shrink) */
+.split-container:hover .left-panel:hover {
+    flex: 1.4;
+}
+.split-container:hover .right-panel:hover {
+    flex: 1.4;
+}
+
+.mac-header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    position: relative;
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+    flex: 1;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+}
+
+.status-indicator {
+    position: absolute;
+    right: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.status-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: transparent;
+}
+.status-indicator.compiling .dot {
+    background-color: var(--ansi-yellow);
+    animation: blink 1s infinite alternate;
+}
+.status-indicator.success .dot { background-color: var(--ansi-green); }
+.status-indicator.error .dot { background-color: var(--ansi-red); }
+
+@keyframes blink {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 10px;
+}
+
+.btn-icon:hover {
+    color: var(--text-main);
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* --- Editor de Código Overlay --- */
+.editor-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ambos, textarea y pre, deben tener la misma tipografía, padding y dimensiones */
+#code-editor, #highlighting {
+    margin: 0;
+    padding: 24px;
+    border: none;
+    width: 100%;
+    height: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    tab-size: 4;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: pre;
+    word-wrap: normal;
+}
+
+#highlighting {
+    z-index: 1;
+    background: transparent;
+    pointer-events: none; /* Dejar pasar los clicks al textarea */
+}
+
+/* Customizar Prism para quitar su background por defecto y alinear margins */
+pre[class*="language-"] {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 24px !important;
+}
+
+#code-editor {
+    z-index: 2;
+    background: transparent;
+    color: transparent; /* El texto es invisible, solo se ve el cursor y la selección */
+    caret-color: var(--text-main);
+    outline: none;
+    resize: none;
+}
+
+#code-editor::selection {
+    background: rgba(176, 141, 106, 0.3);
+    color: transparent; /* Mantiene el texto invisible durante la selección */
+}
+
+#code-editor::-webkit-input-placeholder { color: rgba(140, 126, 113, 0.5); }
+#code-editor:-moz-placeholder { color: rgba(140, 126, 113, 0.5); }
+
+
+/* --- Timeline y Ramas --- */
+.timeline-container {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    scroll-behavior: smooth; /* Anima el scroll nativamente */
+}
+
+.welcome-msg {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--timeline-line);
+}
+
+.timeline-node {
+    position: relative;
+    margin-bottom: 24px;
+    opacity: 0.3;
+    filter: blur(5px);
+    transform: scale(0.98) translateY(10px);
+    transition: opacity 0.6s ease-out, filter 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.timeline-node.visible {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1) translateY(0);
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -25px; /* 30px - 10px(line) - 5px(radius) */
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--node-bg);
+    border: 2px solid var(--text-muted); /* Color por defecto */
+    z-index: 2;
+}
+
+.timeline-node.error .timeline-dot {
+    border-color: var(--ansi-red);
+}
+
+.timeline-node.success .timeline-dot {
+    border-color: var(--ansi-green);
+}
+
+.node-title {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.node-content {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--node-border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    color: var(--text-main);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+}
+
+/* Formateo de ramas estilo árbol (AST) */
+.ast-line {
+    padding-left: var(--indent);
+    position: relative;
+}
+.ast-line::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--indent) - 14px);
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background-color: rgba(0,0,0,0.1);
+}
+.ast-line::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--indent) - 14px);
+    top: 10px;
+    width: 10px;
+    height: 1px;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.ast-line[style*="--indent: 0px"]::before,
+.ast-line[style*="--indent: 0px"]::after {
+    display: none;
+}
+
+/* Scrollbar minimalista */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--timeline-line);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}

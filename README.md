@@ -8,6 +8,9 @@
 </div>
 
 ---
+<div align="center">
+    <img src="./Preview.gif" alt="Preview de la Interfaz Web">
+</div>
 
 ## Introducción
 
@@ -52,7 +55,9 @@ TC-FINAL/
     │   ├── 📝 Optimizador.java       # Módulo de mejora de rendimiento (Fase 5)
     │   ├── 📝 AgenteOptimizadorTAC.java # Agente IA mock para optimización
     │   ├── 📝 UtilsOperaciones.java  # Operaciones reutilizables
-    │   └── 📝 GeneradorArchivos.java # Escritura de artefactos resultantes
+    │   ├── 📝 GeneradorArchivos.java # Escritura de artefactos resultantes
+    │   └── 📝 WebUI.java             # Servidor HTTP nativo para la interfaz web
+    ├── 📁 resources/web/             # Interfaz Gráfica interactiva (HTML/CSS/JS)
     └── 📁 test/                      # Archivos fuente para validación
         ├── 📄 ejemplo_correcto.cpp   # Prueba de flujo de compilación exitoso
         └── 📄 ejemplo_con_errores.cpp# Prueba diseñada para invocar fallos semánticos
@@ -176,12 +181,19 @@ Para replicar el proceso de compilación localmente y someter programas a la cad
    ```bash
    mvn clean install
    ```
-2. **Invocación del ciclo de compilación sobre un archivo de prueba:**
+2. **Opción Web:**
+   Ejecutar sin argumentos levanta un servidor local con una GUI fluida y diseño macOS:
+   ```bash
+   mvn exec:java -Dexec.mainClass="com.compilador.App"
+   ```
+   Luego, ingresa a `http://localhost:8080` en tu navegador.
+
+3. **Opción por consola:**
    ```bash
    mvn exec:java -Dexec.mainClass="com.compilador.App" -Dexec.args="src/test/ejemplo_correcto.cpp"
    ```
 
-El *standard output* presentará un resumen detallado que abarca:
+El compilador presentará un resumen detallado que abarca:
 - El Parse Tree construido.
 - El volcado de los contextos retenidos en la Tabla de Símbolos.
 - Informes de Diagnóstico Semántico.
