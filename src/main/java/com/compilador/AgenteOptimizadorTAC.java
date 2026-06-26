@@ -59,20 +59,16 @@ public class AgenteOptimizadorTAC implements OptimizationAgent {
     private void aplicarPropagacionConstantes() {
         java.util.Map<String, String> constantes = new java.util.HashMap<>();
         int cambios = 0;
-
-        for (InstruccionTAC inst : codigoOptimizado) {
-            if (inst.getTipo() == InstruccionTAC.Tipo.ASIGNACION && inst.getOperador() == null) {
-                if (UtilsOperaciones.esEntero(inst.getOperando1())) {
-                    constantes.put(inst.getDestino(), inst.getOperando1());
-                }
-            }
-        }
-
-        if (constantes.isEmpty()) return;
-
         List<InstruccionTAC> resultado = new ArrayList<>();
 
         for (InstruccionTAC inst : codigoOptimizado) {
+            // Limpiar constantes al toparse con una etiqueta
+            if (inst.getTipo() == InstruccionTAC.Tipo.ETIQUETA) {
+                constantes.clear();
+                resultado.add(inst);
+                continue;
+            }
+
             if (inst.getTipo() == InstruccionTAC.Tipo.ASIGNACION) {
                 String op1 = inst.getOperando1();
                 String op2 = inst.getOperando2();
@@ -88,11 +84,33 @@ public class AgenteOptimizadorTAC implements OptimizationAgent {
                 }
 
                 if (modificado) {
-                    resultado.add(new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, inst.getDestino(), op1, inst.getOperador(), op2));
+                    inst = new InstruccionTAC(InstruccionTAC.Tipo.ASIGNACION, inst.getDestino(), op1, inst.getOperador(), op2);
                     cambios++;
-                    continue;
+                }
+
+                // Actualizar el estado de la variable destino
+                if (inst.getOperador() == null && UtilsOperaciones.esEntero(inst.getOperando1())) {
+                    constantes.put(inst.getDestino(), inst.getOperando1());
+                } else {
+                    constantes.remove(inst.getDestino());
+                }
+            } else if (inst.getTipo() == InstruccionTAC.Tipo.PARAM || inst.getTipo() == InstruccionTAC.Tipo.RETURN || inst.getTipo() == InstruccionTAC.Tipo.SALTO_CONDICIONAL) {
+                // Propagar también a params, returns y condicionales
+                String op1 = inst.getOperando1();
+                String op2 = inst.getOperando2();
+                boolean modificado = false;
+                if (op1 != null && constantes.containsKey(op1)) { op1 = constantes.get(op1); modificado = true; }
+                if (op2 != null && constantes.containsKey(op2)) { op2 = constantes.get(op2); modificado = true; }
+                if (modificado) {
+                    if (inst.getTipo() == InstruccionTAC.Tipo.SALTO_CONDICIONAL) {
+                        inst = InstruccionTAC.saltoCondicional(op1, inst.getOperador(), op2, inst.getDestino());
+                    } else {
+                        inst = new InstruccionTAC(inst.getTipo(), inst.getDestino(), op1, inst.getOperador(), op2);
+                    }
+                    cambios++;
                 }
             }
+
             resultado.add(inst);
         }
 

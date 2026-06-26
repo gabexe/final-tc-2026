@@ -85,6 +85,7 @@ public class InstruccionTAC {
             case PARAM:
                 return "param " + operando1;
             case CALL:
+                if (destino == null) return "call " + operando1 + ", " + operando2;
                 return destino + " = call " + operando1 + ", " + operando2;
             case RETURN:
                 return operando1 == null ? "return" : "return " + operando1;
