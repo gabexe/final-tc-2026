@@ -1,3 +1,23 @@
+## 26-06-2026 - Interfaz Web, Soporte de Control de Flujo y Refactorizaciones
+
+### Added
+1. **Interfaz Web (Web UI): [WebUI.java]**
+   - Se implementó un servidor HTTP nativo y una interfaz gráfica interactiva para facilitar la compilación desde el navegador.
+   - Se agregaron mejoras visuales a la interfaz: posición del cursor en tiempo real, números de línea, botón de copia de resultados y animaciones de scroll automático.
+2. **Soporte Avanzado de Control de Flujo:**
+   - Se implementó soporte completo para las sentencias `break` y `continue` dentro de los bucles iterativos, gestionando los saltos mediante pilas de etiquetas en el Generador TAC.
+
+### Changed
+1. **Refactorización del Modelo TAC:**
+   - Se migró la representación del Código de Tres Direcciones de *Strings* planos a un modelo orientado a objetos (`InstruccionTAC`). Se actualizaron los módulos de optimización para consumir listas de estos objetos.
+2. **Refactorización Arquitectónica (SOLID & DRY):**
+   - Se extrajo la orquestación del pipeline a la nueva clase `Compilador.java`, liberando a `App.java` de responsabilidades excesivas (SRP).
+   - Se modularizó el `AnalizadorSemantico`, eliminando *magic strings* y centralizando las constantes en la clase `TiposLenguaje.java` (DRY).
+3. **Reportes Visuales (Colores ANSI):**
+   - Se implementaron códigos de color ANSI en `App.java`, `TablaSimbolos.java` y `ManejadorErrores.java` para destacar visualmente resultados exitosos (verde), advertencias (amarillo) y errores críticos (rojo) en la terminal.
+
+---
+
 ## 18-06-26 - Optimización de Código Intermedio
 
 ### Added

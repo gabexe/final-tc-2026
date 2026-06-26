@@ -37,9 +37,8 @@ El repositorio adopta una arquitectura estándar de proyectos Maven, facilitando
 ```text
 TC-FINAL/
 ├── 📄 pom.xml                    # Gestión de dependencias (ANTLR4) y ciclo de construcción
-├── 📄 README.md                  # Especificaciones de la cátedra
+├── 📄 README.md                  # Documentación del proyecto
 ├── 📄 CHANGELOG.md               # Registro de control de versiones
-├── 📄 DOCUMENTACION.md           # Informe técnico actual
 └── 📁 src/
     ├── 📁 main/java/com/compilador/  # Lógica principal del compilador
     │   ├── 📝 App.java               # Punto de entrada de consola
@@ -173,7 +172,9 @@ int main() {
 
 ---
 
-## Manual de Ejecución
+## Manual de Usuario
+
+### 1. Ejecución del Compilador
 
 Para replicar el proceso de compilación localmente y someter programas a la cadena de análisis, deben seguirse los siguientes comandos de consola:
 
@@ -198,6 +199,14 @@ El compilador presentará un resumen detallado que abarca:
 - El volcado de los contextos retenidos en la Tabla de Símbolos.
 - Informes de Diagnóstico Semántico.
 - El Código TAC resultante (antes y después de la fase de optimización).
+
+### 2. Interpretación de Mensajes del Compilador
+
+El compilador utiliza un sistema de códigos de color en la consola para clasificar los diagnósticos emitidos durante el análisis:
+
+- 🟢 **Verde (Éxito):** Indica que una fase particular (como el análisis léxico o sintáctico) concluyó sin encontrar ningún inconveniente.
+- 🟡 **Amarillo (Advertencias / Warnings):** Reporta prácticas de código subóptimas o dudosas que **no impiden** la generación del código intermedio. Por ejemplo, advertirá si se declara una variable o parámetro pero jamás se utiliza (código muerto). El proceso de compilación continuará.
+- 🔴 **Rojo (Errores Críticos):** Indica violaciones graves a las reglas del lenguaje, como errores de sintaxis, variables no declaradas, colisiones de nombres o incompatibilidad de tipos. Ante la presencia de un solo error rojo, el compilador **abortará** la generación de código para proteger la integridad del programa.
 
 ---
 <div align="center">
