@@ -138,19 +138,19 @@ public class TablaSimbolos {
     }
 
     public void printTable() {
-        System.out.println("\n================================================ TABLA DE SÍMBOLOS ================================================");
+        System.out.println("\n=============================== TABLA DE SÍMBOLOS ===============================");
         System.out.println(String.format("%-20s | %-10s | %-12s | %-12s | Inicializado | Usado   | Duplicado",
                 "Nombre", "Tipo", "Categoría", "Scope"));
         System.out.println("-------------------------------------------------------------------------------------------------------------------");
         for (Symbol sym : allSymbols) {
             System.out.println(sym);
         }
-        System.out.println("===================================================================================================================");
+        System.out.println("==================================================================================================");
         System.out.println("Resumen de la Tabla de Símbolos:");
         System.out.println("- Símbolos totales registrados: " + allSymbols.size());
         long duplicadas = allSymbols.stream().filter(s -> s.duplicate).count();
         System.out.println("- Declaraciones duplicadas: " + duplicadas);
-        System.out.println("===================================================================================================================");
+        System.out.println("==================================================================================================");
     }
 
     public void printDiagnostics() {

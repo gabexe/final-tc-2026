@@ -27,4 +27,6 @@ Thumbs.db
 *.tmp
 *.out
 .pdf
-.html
+output/
+.tac
+.opt

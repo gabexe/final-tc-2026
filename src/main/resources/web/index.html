@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C++ Compiler - macOS Sepia</title>
+    <title>C++ Compiler</title>
     <!-- Prism.js Tema Solarized Light -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-solarizedlight.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css">
@@ -18,6 +18,7 @@
                 <div id="status-indicator" class="status-indicator"></div>
             </div>
             <div class="editor-container">
+                <div id="line-numbers" class="line-numbers" aria-hidden="true"></div>
                 <pre aria-hidden="true" id="highlighting"><code class="language-cpp" id="highlighting-content"></code></pre>
                 <textarea id="code-editor" spellcheck="false" placeholder="// Escribe aquí tu código C++ para compilar...
 int main() {
@@ -27,6 +28,11 @@ int main() {
     }
     return 0;
 }"></textarea>
+            </div>
+            <div class="vim-status-bar">
+                <div class="vim-mode">NORMAL</div>
+                <div class="vim-file">main.cpp</div>
+                <div class="vim-cursor" id="vim-cursor">1,1</div>
             </div>
         </div>
 

@@ -182,7 +182,7 @@ Para replicar el proceso de compilación localmente y someter programas a la cad
    mvn clean install
    ```
 2. **Opción Web:**
-   Ejecutar sin argumentos levanta un servidor local con una GUI fluida y diseño macOS:
+   Ejecutar sin argumentos levanta un servidor local con una GUI fluida:
    ```bash
    mvn exec:java -Dexec.mainClass="com.compilador.App"
    ```

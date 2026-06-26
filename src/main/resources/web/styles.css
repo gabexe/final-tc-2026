@@ -42,13 +42,15 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    flex: 1; /* Valor por defecto */
-    min-width: 0; /* Previene que el panel se quede atascado por contenido ancho */
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     transition: flex 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .right-panel {
-    background-color: #f7f3ec; /* Ligeramente sepia para separar el resultado */
+    background-color: #f7f3ec;
 }
 
 /* Hover effects (Expand/Shrink) */
@@ -135,7 +137,7 @@ body {
 /* Ambos, textarea y pre, deben tener la misma tipografía, padding y dimensiones */
 #code-editor, #highlighting {
     margin: 0;
-    padding: 24px;
+    padding: 24px 24px 24px 48px; /* Ajustado para hacer espacio a los números de línea */
     border: none;
     width: 100%;
     height: 100%;
@@ -154,20 +156,20 @@ body {
 #highlighting {
     z-index: 1;
     background: transparent;
-    pointer-events: none; /* Dejar pasar los clicks al textarea */
+    pointer-events: none; 
 }
 
-/* Customizar Prism para quitar su background por defecto y alinear margins */
+
 pre[class*="language-"] {
     background: transparent !important;
     margin: 0 !important;
-    padding: 24px !important;
+    padding: 24px 24px 24px 48px !important;
 }
 
 #code-editor {
     z-index: 2;
     background: transparent;
-    color: transparent; /* El texto es invisible, solo se ve el cursor y la selección */
+    color: transparent;
     caret-color: var(--text-main);
     outline: none;
     resize: none;
@@ -175,22 +177,73 @@ pre[class*="language-"] {
 
 #code-editor::selection {
     background: rgba(176, 141, 106, 0.3);
-    color: transparent; /* Mantiene el texto invisible durante la selección */
+    color: transparent;
 }
 
 #code-editor::-webkit-input-placeholder { color: rgba(140, 126, 113, 0.5); }
 #code-editor:-moz-placeholder { color: rgba(140, 126, 113, 0.5); }
+
+/* --- Line Numbers --- */
+.line-numbers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 100%;
+    padding: 24px 0;
+    text-align: right;
+    color: rgba(140, 126, 113, 0.4);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    background: transparent;
+    border-right: 1px solid var(--border-color);
+    overflow: hidden;
+    user-select: none;
+    pointer-events: none;
+    z-index: 3;
+}
+.line-numbers div {
+    padding-right: 8px;
+}
+
+/* --- Vim Status Bar --- */
+.vim-status-bar {
+    height: 24px;
+    background-color: var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-main);
+    font-weight: 500;
+    z-index: 10;
+}
+.vim-mode {
+    font-weight: bold;
+    margin-right: 16px;
+    color: var(--ansi-green);
+}
+.vim-file {
+    flex: 1;
+    opacity: 0.8;
+}
+.vim-cursor {
+    opacity: 0.8;
+}
 
 
 /* --- Timeline y Ramas --- */
 .timeline-container {
     flex: 1;
     padding: 30px;
+    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
-    scroll-behavior: smooth; /* Anima el scroll nativamente */
+    scroll-behavior: smooth;
 }
 
 .welcome-msg {
@@ -218,16 +271,21 @@ pre[class*="language-"] {
 .timeline-node {
     position: relative;
     margin-bottom: 24px;
-    opacity: 0.3;
-    filter: blur(5px);
-    transform: scale(0.98) translateY(10px);
-    transition: opacity 0.6s ease-out, filter 0.6s ease-out, transform 0.6s ease-out;
+    opacity: 0;
+    animation: fadeInNode 0.6s ease-out forwards;
 }
 
-.timeline-node.visible {
-    opacity: 1;
-    filter: blur(0px);
-    transform: scale(1) translateY(0);
+@keyframes fadeInNode {
+    from {
+        opacity: 0.3;
+        filter: blur(5px);
+        transform: scale(0.98) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0px);
+        transform: scale(1) translateY(0);
+    }
 }
 
 .timeline-dot {
@@ -269,6 +327,9 @@ pre[class*="language-"] {
     color: var(--text-main);
     line-height: 1.6;
     white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-x: auto;
     box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 
@@ -276,6 +337,8 @@ pre[class*="language-"] {
 .ast-line {
     padding-left: var(--indent);
     position: relative;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 .ast-line::before {
     content: '';

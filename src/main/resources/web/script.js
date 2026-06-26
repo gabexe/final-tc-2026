@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const timelineContainer = document.getElementById('timeline-container');
     const statusIndicator = document.getElementById('status-indicator');
     const btnCopy = document.getElementById('btn-copy');
+    const lineNumbers = document.getElementById('line-numbers');
+    const vimCursor = document.getElementById('vim-cursor');
 
     let debounceTimer;
     let lastCode = "";
@@ -26,10 +28,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         highlightingContent.textContent = code;
         Prism.highlightElement(highlightingContent);
+        
+        updateLineNumbers();
+    }
+
+    function updateLineNumbers() {
+        const lines = editor.value.split('\n').length;
+        let html = '';
+        for(let i = 1; i <= lines; i++) {
+            html += `<div>${i}</div>`;
+        }
+        lineNumbers.innerHTML = html;
+    }
+
+    function updateCursorPosition() {
+        const text = editor.value;
+        const cursorPos = editor.selectionStart;
+        const lines = text.substring(0, cursorPos).split('\n');
+        const currentLine = lines.length;
+        const currentCol = lines[lines.length - 1].length + 1;
+        vimCursor.textContent = `${currentLine},${currentCol}`;
     }
 
     editor.addEventListener('input', () => {
         updateCode();
+        updateCursorPosition();
         
         const currentCode = editor.value.trim();
         if (currentCode === lastCode) return;
@@ -43,9 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Update cursor on clicks and key presses
+    editor.addEventListener('keyup', updateCursorPosition);
+    editor.addEventListener('click', updateCursorPosition);
+
     editor.addEventListener('scroll', () => {
         highlighting.scrollTop = editor.scrollTop;
         highlighting.scrollLeft = editor.scrollLeft;
+        lineNumbers.scrollTop = editor.scrollTop;
     });
 
     editor.addEventListener('keydown', function(e) {
@@ -67,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateCode();
+    updateCursorPosition();
     const initialCode = editor.value.trim();
     if (initialCode) {
         lastCode = initialCode;
@@ -112,20 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const scrollObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            } else {
-                entry.target.classList.remove('visible');
-            }
-        });
-    }, {
-        root: timelineContainer,
-        threshold: 0.15,
-        rootMargin: '0px 0px -20px 0px'
-    });
-
     async function simulateEvolution(rawOutput) {
         const lines = rawOutput.split('\n');
         let currentSectionTitle = "Iniciando";
@@ -152,8 +167,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const timeline = document.getElementById('timeline');
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
         
         addNode("Análisis Léxico y Sintáctico", "Escaneando tokens y verificando la gramática del código fuente...", "normal");
+        await sleep(500);
 
         for (const section of sections) {
             if (section.title.includes("Iniciando")) continue;
@@ -178,17 +195,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             addNode(section.title, htmlContent, status);
             
+            setTimeout(() => {
+                timelineContainer.scrollTop = timelineContainer.scrollHeight;
+            }, 50);
+            
+            const delay = Math.min(1500, Math.max(900, rawContentStr.length * 1.5));
+            await sleep(delay);
+            
             if (rawContentStr.includes("Compilación fallida")) {
                 status = "error";
                 setStatus('error', 'Fallido');
             }
         }
 
+        await sleep(800);
         timelineContainer.scrollTop = 0;
     }
 
     function addNode(title, contentHTML, statusClass) {
         const timeline = document.getElementById('timeline');
+        if (!timeline) return;
+        
         const node = document.createElement('div');
         node.className = `timeline-node ${statusClass}`;
         
@@ -198,8 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="node-content">${contentHTML}</div>
         `;
         timeline.appendChild(node);
-        
-        scrollObserver.observe(node);
     }
 
     function stripAnsi(str) {
