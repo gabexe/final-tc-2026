@@ -17,7 +17,67 @@
    - Se implementaron códigos de color ANSI en `App.java`, `TablaSimbolos.java` y `ManejadorErrores.java` para destacar visualmente resultados exitosos (verde), advertencias (amarillo) y errores críticos (rojo) en la terminal.
 
 ---
+## 20-06-2026 - Actividad 6 - Parte 2: Reportes Visuales con Colores ANSI
+### Added
+1. Reportes Visuales (Colores ANSI):
+  - Se implementó un sistema de reporte visual utilizando códigos de color ANSI para diferenciar claramente el estado de la compilación en la terminal. Los errores críticos (léxicos, sintácticos y semánticos) se muestran en color ROJO, las advertencias semánticas (variables no usadas) se muestran en color AMARILLO, y los mensajes de éxito se muestran en color VERDE.
+### Changed
+1. [ManejadorErrores.java]
+  - Se agregaron las constantes estáticas `RESET`, `ROJO` y `VERDE` con los códigos de escape ANSI correspondientes. Se modificó el método `syntaxError()` para imprimir los errores léxicos y sintácticos en color rojo. Se actualizó el método `imprimirResumen()` para mostrar el mensaje de éxito en verde cuando no se detectan errores, o en rojo cuando existen errores.
+2. [TablaSimbolos.java]
+  - Se agregaron las constantes estáticas `RESET`, `ROJO`, `VERDE` y `AMARILLO` con los códigos de escape ANSI correspondientes. Se modificó el método `printDiagnostics()` para imprimir los errores semánticos en color rojo (por `stderr`), las advertencias en color amarillo (por `stdout`), y el mensaje de éxito en verde cuando no existen anomalías semánticas. El resumen final también utiliza colores para destacar la cantidad de errores y warnings.
+3. [App.java]
+  - Se agregaron las constantes estáticas `RESET` y `VERDE` con los códigos de escape ANSI. Se modificó el mensaje final de compilación exitosa para mostrarse en color verde, brindando una confirmación visual inmediata del éxito del pipeline de compilación.
+### Verificación y Pruebas Realizadas
+1. Programa Correcto (`src/test/ejemplo_correcto.cpp`)
+  - Se ejecutó la compilación para validar la integración del sistema de colores.
+  - Resultados:
+	- El mensaje final de compilación exitosa se muestra correctamente en color verde.
+	- El warning de la variable global `activo` (declarada pero no usada) se muestra en color amarillo.
+	- No se generan mensajes en rojo al no existir errores críticos en el código fuente.
+1. Programa con Errores (`src/test/ejemplo_con_errores.cpp`)
+  - Se ejecutó la compilación para validar la diferenciación visual de errores y advertencias.
+  - Resultados:
+	- Todos los errores sintácticos y semánticos (variables duplicadas, no declaradas, tipos incompatibles) se muestran claramente en color rojo.
+	- Las advertencias de variables no utilizadas se muestran en color amarillo, permitiendo distinguirlas fácilmente de los errores críticos.
+	- El resumen final muestra en rojo la cantidad de errores detectados, facilitando la identificación rápida del estado de la compilación.
 
+---
+## 20-06-2026 - Actividad 6 - Parte 1: Salidas del Compilador e Incorporación de IA/Agentes
+### Added
+1. Nueva Interfaz: [OptimizationAgent.java]
+  - Definición del Contrato para Agentes de Optimización: Se crea la interfaz base `OptimizationAgent` con el método `optimize(ASTNode node)` que deberán implementar todos los agentes inteligentes del sistema, estableciendo un contrato común para la aplicación de transformaciones sobre el código.
+2. Nuevo Agente IA sobre TAC: [AgenteOptimizadorTAC.java]
+  - Implementación de Agente Inteligente sobre Código Intermedio: Se desarrolla un agente basado en reglas que opera directamente sobre la lista de instrucciones TAC, aplicando tres técnicas de optimización de forma secuencial:
+	  - Constant Folding Avanzado: Detecta y pliega operaciones aritméticas entre literales enteros mediante expresiones regulares, reemplazando instrucciones como `t10 = 40 + 2` por `t10 = 42` en tiempo de compilación.
+	  - Propagación de Constantes: Identifica variables que almacenan valores constantes y propaga dichos valores en las instrucciones posteriores donde se utilizan, eliminando referencias innecesarias a variables intermedias.
+	  - Eliminación de Asignaciones Redundantes: Detecta y descarta asignaciones triviales del tipo `x = x` o reasignaciones idénticas consecutivas que no aportan valor semántico al programa.
+3. Nuevo Clasificador ML: [DetectorVariablesInnecesarias.java]
+  - Agente de Machine Learning para Detección de Variables Muertas: Se implementa un clasificador basado en árbol de decisión que extrae características del AST para identificar variables candidatas a eliminación. El agente analiza tres atributos por cada variable declarada: si su valor inicial es un literal, el conteo total de usos en el programa, y aplica la regla aprendida "eliminar si es literal y tiene ≤ 1 uso". Incluye reporte detallado en consola con el nombre, valor y cantidad de usos de cada variable eliminada.
+4. Nueva Clase Utilitaria: [GeneradorArchivos.java]
+  - Generación Persistente de Salidas del Compilador: Se implementa un módulo dedicado a la escritura de archivos físicos que crea automáticamente una carpeta `output/` en la raíz del proyecto y genera dos archivos por cada compilación exitosa:
+	  - `[nombre_archivo].tac`: Contiene el código intermedio de tres direcciones sin optimizar.
+	  - `[nombre_archivo].opt`: Contiene el código TAC final después de aplicar el pipeline completo de agentes IA y optimizador clásico.
+### Changed
+1. [App.java]
+  - Integración del Pipeline de Agentes IA: Se reestructura el flujo de compilación exitosa para incorporar la nueva Fase 4.5 de optimización inteligente. El nuevo orden de ejecución es: Generación TAC → Agente IA sobre TAC → Detector ML sobre AST → Optimizador Clásico → Generación de Archivos de Salida.
+2. Nuevos Bloques de Salida Formateada: Se agregan los separadores visuales `--- Fase 4.5: Agentes IA sobre el TAC ---` y `--- Fase 6: Generación de Archivos de Salida ---` para distinguir claramente cada etapa del pipeline en la consola.
+### Verificación y Pruebas Realizadas
+1. Programa Correcto (`src/test/ejemplo_correcto.cpp`)
+  - Se ejecutó la compilación completa para validar la integración de los nuevos módulos.
+  - **Resultados**:
+	- El Agente IA sobre TAC detectó y aplicó 2 optimizaciones (1 operación plegada + 1 propagación de constante).
+	- El Detector ML analizó el AST correctamente sin eliminar variables legítimas del programa de prueba.
+	- Se generaron exitosamente los archivos `output/ejemplo_correcto.tac` y `output/ejemplo_correcto.opt` con el código intermedio antes y después de las optimizaciones.
+	- El pipeline completo mantiene la integridad semántica del programa mientras reduce instrucciones redundantes.
+2. Programa con Errores (`src/test/ejemplo_con_errores.cpp`)
+  - Se ejecutó la compilación para validar la protección del nuevo pipeline.
+  - **Resultados**:
+	- Al detectarse errores semánticos en fases previas, la compilación se aborta antes de llegar a los agentes IA.
+	- No se generan archivos de salida en la carpeta `output/` cuando el código fuente contiene errores críticos.
+	- El comportamiento es consistente con la teoría de compiladores: las fases de optimización y síntesis solo se ejecutan sobre código validado semánticamente.
+
+---
 ## 18-06-26 - Optimización de Código Intermedio
 
 ### Added
